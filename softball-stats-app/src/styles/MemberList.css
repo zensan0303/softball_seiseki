@@ -1,0 +1,360 @@
+.member-list {
+  padding: 16px 0;
+}
+
+.member-list-header {
+  margin-bottom: 20px;
+}
+
+.member-list-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.new-member-section {
+  margin-bottom: 24px;
+}
+
+.btn-add-new-member {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.btn-add-new-member:hover {
+  background-color: #218838;
+}
+
+.new-member-form {
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #28a745;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.new-member-form input {
+  flex: 1;
+  padding: 10px 12px;
+  background-color: rgba(15, 23, 42, 0.8);
+  color: #f1f5f9;
+  border: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.new-member-form input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.new-member-form input:focus {
+  outline: none;
+  background-color: rgba(15, 23, 42, 0.95);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.new-member-form .btn-submit {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.new-member-form .btn-submit:hover {
+  background-color: #218838;
+}
+
+/* 打順グリッド */
+.batting-order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+  background-color: #f0f8ff;
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid #b3d9ff;
+}
+
+.batting-order-slot {
+  background-color: white;
+  padding: 12px;
+  border-radius: 4px;
+  border: 2px solid #007bff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007bff;
+  text-align: center;
+}
+
+.member-select {
+  padding: 10px 12px;
+  background-color: rgba(15, 23, 42, 0.8);
+  color: #f1f5f9;
+  border: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.member-select:focus {
+  outline: none;
+  background-color: rgba(15, 23, 42, 0.95);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.member-select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  padding: 8px;
+}
+
+.btn-remove-member {
+  padding: 4px 8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+.btn-remove-member:hover {
+  background-color: #c82333;
+}
+
+/* 打順未設定のメンバー */
+.unassigned-members {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #fff3cd;
+  border-radius: 4px;
+  border-left: 4px solid #ffc107;
+}
+
+.unassigned-members h4 {
+  margin: 0 0 12px 0;
+  color: #856404;
+  font-size: 14px;
+}
+
+.unassigned-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unassigned-member {
+  background-color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ffc107;
+}
+
+.unassigned-member span {
+  font-size: 14px;
+  color: #333;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove:hover {
+  color: #c82333;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+  font-style: italic;
+}
+
+/* グローバル選手管理セクション */
+.btn-manage-members {
+  padding: 8px 16px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.btn-manage-members:hover {
+  background-color: #138496;
+}
+
+.global-members-section {
+  margin-top: 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9f0f7 100%);
+  border-radius: 8px;
+  border-left: 4px solid #17a2b8;
+}
+
+.global-members-section h4 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.global-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.global-member-item {
+  background-color: white;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #d0dbe5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.global-member-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #17a2b8;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.member-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-edit,
+.btn-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+  background-color: #e3f2fd;
+  transform: scale(1.1);
+}
+
+.btn-delete:hover {
+  background-color: #ffebee;
+  transform: scale(1.1);
+}
+
+.member-edit-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.member-edit-form input {
+  flex: 1;
+  padding: 8px 10px;
+  background-color: rgba(15, 23, 42, 0.8);
+  color: #f1f5f9;
+  border: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.member-edit-form input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.member-edit-form input:focus {
+  outline: none;
+  border-color: #17a2b8;
+  box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.25);
+}
+
+.btn-save,
+.btn-cancel {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-save {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: #218838;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #5a6268;
+}
+
+.empty-text {
+  text-align: center;
+  color: #999;
+  padding: 12px;
+  font-size: 14px;
+  font-style: italic;
+}
+

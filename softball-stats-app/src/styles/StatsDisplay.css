@@ -1,0 +1,125 @@
+.stats-display {
+  padding: 16px 0;
+}
+
+.stats-display h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a1a;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 12px;
+}
+
+.team-summary {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-item .label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.summary-item .value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+.stats-table-container {
+  overflow-x: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stats-table thead {
+  background-color: #f0f0f0;
+}
+
+.stats-table th {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #ddd;
+}
+
+.stats-table td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.stats-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.stats-table .player-name {
+  text-align: left;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.stats-table .highlight {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.stats-table .highlight-ops {
+  color: #dc3545;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.stats-legend {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f0f8ff;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+}
+
+.stats-legend h4 {
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+}
+
+.stats-legend ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+  list-style: none;
+}
+
+.stats-legend li {
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 13px;
+}
+
+.stats-legend strong {
+  color: #1a1a1a;
+}
+
+.empty-message {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+  font-style: italic;
+}
