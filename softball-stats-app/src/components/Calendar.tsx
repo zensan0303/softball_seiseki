@@ -35,6 +35,11 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     // リアルタイム監視を設定（他のユーザーの変更を自動反映）
     const unsubscribe = watchMatches((updatedMatches) => {
       setMatches(updatedMatches)
+      // 選択中の試合を更新（IDが一致する試合を新しい配列から見つける）
+      setSelectedMatch((currentSelected) => {
+        if (!currentSelected) return null
+        return updatedMatches.find((m) => m.id === currentSelected.id) || null
+      })
     })
 
     return () => {
@@ -448,14 +453,22 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onUpdateGlobalMember={handleUpdateGlobalMember}
           onClose={() => setSelectedMatch(null)}
           onDeleteMatch={handleDeleteMatch}
-          onUpdate={(updatedMatch) => {
+          onUpdate={async (updatedMatch) => {
+            // 楽観的更新（UIの即座な反応のため）
             setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)
-            // Firebaseに保存
-            saveMatch(updatedMatch).catch((error) => {
+            
+            try {
+              // Firebaseに保存（リアルタイムリスナーが自動的に同期します）
+              await saveMatch(updatedMatch)
+            } catch (error) {
               console.error('Failed to save updated match to Firebase:', error)
-              // エラーをサイレントに処理
-            })
+              alert('試合データの保存に失敗しました。もう一度お試しください。')
+              // エラー時は以前のデータを再読み込み
+              const savedMatches = await getAllMatches()
+              setMatches(savedMatches)
+              setSelectedMatch(savedMatches.find(m => m.id === updatedMatch.id) || null)
+            }
           }}
         />
       )}
