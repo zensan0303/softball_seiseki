@@ -19,11 +19,14 @@ export default function InningByInningStats({
   const [memberStatsMap, setMemberStatsMap] = useState<Map<string, InningStats[]>>(new Map())
   // ランナーを塁ごとに管理: { inningNumber: { 1塁: playerId[], 2塁: playerId[], 3塁: playerId[] } }
   const [runners, setRunners] = useState<Map<number, { bases: Map<number, Set<string>> }>>(new Map())
+  // 代打選手の管理
+  const [substituteMembers, setSubstituteMembers] = useState<Set<string>>(new Set())
 
   // マッチのstatsが更新されたときに各選手の成績を読み込み
   useEffect(() => {
     const newMap = new Map<string, InningStats[]>()
     let maxInning = 9
+    const subsSet = new Set<string>()
     
     stats.forEach((playerStats) => {
       newMap.set(playerStats.playerId, playerStats.innings)
@@ -31,10 +34,22 @@ export default function InningByInningStats({
       if (inningNumbers.length > 0) {
         maxInning = Math.max(maxInning, Math.max(...inningNumbers))
       }
+      
+      // 代打として出場した選手を復元
+      playerStats.innings.forEach((inning) => {
+        if (inning.substitutePlayerId) {
+          subsSet.add(playerStats.playerId)
+        }
+      })
     })
     
     setMemberStatsMap(newMap)
     setMaxInnings(maxInning)
+    setSubstituteMembers(prev => {
+      // 手動で追加された代打選手も保持
+      const combined = new Set([...subsSet, ...prev])
+      return combined
+    })
   }, [stats])
 
   const getInningStats = (memberId: string, inningNumber: number): InningStats | undefined => {
@@ -117,6 +132,41 @@ export default function InningByInningStats({
       }
     }
     return false
+  }
+
+  // 代打として追加可能な選手を取得（打順10番以降 or 打順なし）
+  const getAvailableSubstitutes = (): Member[] => {
+    return members.filter(m => 
+      !m.battingOrder || m.battingOrder === 0 || m.battingOrder >= 10
+    )
+  }
+
+  // 代打選手として追加された選手を取得
+  const getSubstituteMembers = (): Member[] => {
+    return members.filter(m => substituteMembers.has(m.id))
+  }
+
+  // 代打選手を追加
+  const handleAddSubstitute = (memberId: string) => {
+    setSubstituteMembers(prev => new Set([...prev, memberId]))
+  }
+
+  // 代打選手を削除
+  const handleRemoveSubstitute = (memberId: string) => {
+    setSubstituteMembers(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(memberId)
+      return newSet
+    })
+    
+    // その選手の成績をクリア
+    const playerStats = stats.get(memberId)
+    if (playerStats) {
+      onUpdateStats(memberId, {
+        ...playerStats,
+        innings: []
+      })
+    }
   }
 
   // ランナーを進塁させ、得点するランナーを計算
@@ -504,7 +554,7 @@ export default function InningByInningStats({
   const getMembersByBattingOrder = (): Member[] => {
     if (!members || members.length === 0) return []
     return members
-      .filter(m => m && m.battingOrder && m.battingOrder > 0)
+      .filter(m => m && m.battingOrder && m.battingOrder >= 1 && m.battingOrder <= 9)
       .sort((a, b) => (a.battingOrder || 0) - (b.battingOrder || 0))
   }
 
@@ -601,8 +651,79 @@ export default function InningByInningStats({
                 <td className="cell-stat">{getBattingAverage(member.id)}</td>
               </tr>
             ))}
+            {/* 代打選手の行 */}
+            {getSubstituteMembers().map((member) => (
+              <tr key={`substitute-${member.id}`} className="player-row substitute-row">
+                <td className="cell-batting-order">代</td>
+                <td className="cell-name">
+                  {member.name}
+                  <button
+                    className="btn-remove-substitute"
+                    onClick={() => handleRemoveSubstitute(member.id)}
+                    title="代打選手を削除"
+                  >
+                    ×
+                  </button>
+                </td>
+                {Array.from({ length: maxInnings }, (_, i) => {
+                  const inningNumber = i + 1
+                  const inning = getInningStats(member.id, inningNumber)
+                  const allInnings = getAllInningStats(member.id, inningNumber)
+                  const isClosed = false  // 代打選手は3アウトでもグレーアウトしない
+                  const hasMultipleAtBats = allInnings.length > 1
+                  
+                  return (
+                    <td
+                      key={inningNumber}
+                      className={`cell-result ${isClosed ? 'closed' : ''} ${hasMultipleAtBats ? 'multiple' : ''}`}
+                    >
+                      <ResultSelector
+                        memberId={member.id}
+                        inningNumber={inningNumber}
+                        inning={inning}
+                        allInnings={allInnings}
+                        onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
+                        onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
+                        onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
+                        onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        isClosed={isClosed}
+                        canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
+                      />
+                    </td>
+                  )
+                })}
+                <td className="cell-stat">{getTotalAtBats(member.id)}</td>
+                <td className="cell-stat">{getTotalHits(member.id)}</td>
+                <td className="cell-stat">{getTotalWalks(member.id)}</td>
+                <td className="cell-stat">{getTotalRBIs(member.id)}</td>
+                <td className="cell-stat">{getBattingAverage(member.id)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+
+      {/* 代打選手追加セクション */}
+      <div className="substitute-actions">
+        <select
+          className="substitute-select"
+          value=""
+          onChange={(e) => {
+            if (e.target.value) {
+              handleAddSubstitute(e.target.value)
+              e.target.value = ''
+            }
+          }}
+        >
+          <option value="">代打選手を追加</option>
+          {getAvailableSubstitutes()
+            .filter(m => !substituteMembers.has(m.id))
+            .map(m => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+        </select>
       </div>
 
       {members.length === 0 && (
