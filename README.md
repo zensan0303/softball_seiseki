@@ -79,6 +79,44 @@ npm run build
 
 ビルドされたファイルは`dist/`フォルダに出力されます。
 
+## GitHub Pagesへのデプロイ
+
+このアプリケーションはGitHub Pagesに自動デプロイされます。
+
+### デプロイ設定
+
+1. **GitHub Secretsの設定**
+   
+   GitHubリポジトリの Settings > Secrets and variables > Actions で以下のSecretsを設定してください：
+   
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_DATABASE_URL`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+
+2. **GitHub Pagesの有効化**
+   
+   GitHubリポジトリの Settings > Pages で以下を設定：
+   - Source: "GitHub Actions" を選択
+
+3. **デプロイ**
+   
+   `main`ブランチにプッシュすると、GitHub Actionsが自動的にビルドとデプロイを実行します。
+   デプロイが完了すると、以下のURLでアプリケーションにアクセスできます：
+   
+   ```
+   https://zensan0303.github.io/softball_seiseki/
+   ```
+
+### デプロイの確認
+
+GitHub Actionsのワークフロー実行状況は以下で確認できます：
+- リポジトリの「Actions」タブ
+- デプロイ完了後、「Settings」>「Pages」にサイトのURLが表示されます
+
 ## Firebase セキュリティルールの設定（推奨）
 
 テストモードのセキュリティルールは誰でもデータを読み書きできるため、本番環境では以下のようなルールに変更することを推奨します：
