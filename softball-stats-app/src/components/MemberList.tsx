@@ -38,8 +38,8 @@ export default function MemberList({
     }
   })
 
-  // 打順が未設定のメンバー
-  const unorderedMembers = safeMembers.filter(m => !m.battingOrder || m.battingOrder < 1 || m.battingOrder > 9)
+  // ベンチメンバー（打順10番以降）
+  const benchMembers = safeMembers.filter(m => m.battingOrder && m.battingOrder >= 10)
 
   // 各打順で利用可能なメンバー（別の打順に割り当てられていない）
   const getAvailableMembersForOrder = (order: number) => {
@@ -50,24 +50,52 @@ export default function MemberList({
       }
     })
     
+    // ベンチメンバーも除外
+    benchMembers.forEach(m => {
+      assignedToOtherOrders.add(m.id)
+    })
+    
     // グローバルメンバーと現在のメンバーをマージして、重複を排除
     const allAvailableMembers = new Map<string, Member>()
     
-    // まずグローバルメンバーを追加
+    // グローバルメンバーを追加（スターターとベンチに割り当てられていないもの）
     globalMembers.forEach(m => {
       if (!assignedToOtherOrders.has(m.id)) {
         allAvailableMembers.set(m.id, m)
       }
     })
     
-    // 打順未設定のメンバーを追加
-    unorderedMembers.forEach(m => {
-      if (!assignedToOtherOrders.has(m.id)) {
-        allAvailableMembers.set(m.id, m)
-      }
-    })
-    
     return Array.from(allAvailableMembers.values())
+  }
+
+  // ベンチメンバー用の利用可能メンバー
+  const getAvailableBenchMembers = () => {
+    const assigned = new Set<string>()
+    membersByOrder.forEach(member => assigned.add(member.id))
+    benchMembers.forEach(member => assigned.add(member.id))
+    
+    return globalMembers.filter(m => !assigned.has(m.id))
+  }
+
+  // ベンチメンバーを追加
+  const handleAddBenchMember = (memberId: string) => {
+    if (!memberId) return
+    
+    const member = globalMembers.find(m => m.id === memberId)
+    if (!member) return
+    
+    // 次の利用可能な打順番号を取得（10番から開始）
+    const existingBenchOrders = benchMembers.map(m => m.battingOrder || 10)
+    const nextOrder = existingBenchOrders.length > 0 
+      ? Math.max(...existingBenchOrders) + 1 
+      : 10
+    
+    onAddMember({ ...member, battingOrder: nextOrder })
+  }
+
+  // ベンチメンバーを削除
+  const handleRemoveBenchMember = (memberId: string) => {
+    onRemoveMember(memberId)
   }
 
   const handleAssignMember = (battingOrder: number, memberId: string) => {
@@ -279,25 +307,46 @@ export default function MemberList({
         })}
       </div>
 
-      {unorderedMembers.length > 0 && (
-        <div className="unassigned-members">
-          <h4>打順未設定のメンバー</h4>
-          <div className="unassigned-list">
-            {unorderedMembers.map((member) => (
-              <div key={member.id} className="unassigned-member">
-                <span>{member.name}</span>
-                <button
-                  className="btn-remove"
-                  onClick={() => onRemoveMember(member.id)}
-                  title="削除"
-                >
-                  ✕
-                </button>
+      {/* ベンチメンバーセクション */}
+      <div className="bench-members-section">
+        <h4>⚾ ベンチメンバー</h4>
+        <select
+          className="bench-select"
+          value=""
+          onChange={(e) => {
+            handleAddBenchMember(e.target.value)
+            e.target.value = ''
+          }}
+        >
+          <option value="">ベンチメンバーを追加...</option>
+          {getAvailableBenchMembers().map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        
+        <div className="bench-members-list">
+          {benchMembers.map((member) => (
+            <div key={member.id} className="bench-member-item">
+              <div className="bench-member-info">
+                <span className="bench-order-badge">{member.battingOrder}</span>
+                <span className="bench-member-name">{member.name}</span>
               </div>
-            ))}
-          </div>
+              <button
+                className="btn-remove-bench"
+                onClick={() => handleRemoveBenchMember(member.id)}
+                title="削除"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {benchMembers.length === 0 && (
+            <p className="empty-text">ベンチメンバーはいません</p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

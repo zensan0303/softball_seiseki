@@ -10,6 +10,7 @@ export interface InningStats {
   inningNumber: number
   battingOrder?: number  // 打順（オプション）
   atBatNumber?: number   // 打席番号（同一回での複数打席に対応）
+  substitutePlayerId?: string  // 代打選手のID
   atBats: number      // 打数
   hits: number        // 安打
   walks: number       // 四死球
