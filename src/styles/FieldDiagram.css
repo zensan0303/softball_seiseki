@@ -1,0 +1,60 @@
+.field-diagram-container {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.field-diagram-container h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.field-diagram {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  background-color: #f0f8f0;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+}
+
+.position-area {
+  transition: all 0.2s ease;
+}
+
+.position-area:hover {
+  filter: brightness(1.1);
+}
+
+.selected-position {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #e8f5e9;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.clear-selection {
+  padding: 4px 12px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.clear-selection:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+}

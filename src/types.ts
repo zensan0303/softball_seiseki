@@ -5,6 +5,21 @@ export interface Member {
   battingOrder?: number  // 打順（1-9番）
 }
 
+// 打球方向（野球場のポジション）
+export type HitDirection = 
+  | 'pitcher'       // 投手
+  | 'catcher'       // 捕手
+  | 'first'         // 一塁手
+  | 'second'        // 二塁手
+  | 'third'         // 三塁手
+  | 'shortstop'     // 遊撃手
+  | 'left'          // 左翼手
+  | 'center'        // 中堅手
+  | 'right'         // 右翼手
+  | 'left-center'   // レフト・センター間
+  | 'right-center'  // ライト・センター間
+  | null
+
 // 回ごとの成績
 export interface InningStats {
   inningNumber: number
@@ -23,6 +38,7 @@ export interface InningStats {
   sacrificeFlies: number  // 犠フライ
   errors: number      // エラー
   deadBalls: number   // デッドボール（死球）
+  hitDirection?: HitDirection  // 打球方向
 }
 
 // 選手の個別成績（回ごと）
@@ -63,6 +79,12 @@ export interface PlayerOverallStats {
   sluggingPercentage: number  // 長打率 (塁打 / 打数)
   onBasePercentage: number  // 出塁率 ((安打 + 四死球) / (打数 + 四死球))
   ops: number  // OPS (出塁率 + 長打率)
+  
+  // 打球方向の統計（オプション）
+  hitDirectionTotal?: number
+  pullRate?: number       // 引っ張り率
+  oppositeRate?: number   // 流し打ち率
+  centerRate?: number     // センター方向率
 }
 
 // 試合統計サマリー

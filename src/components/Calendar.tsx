@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Match, Member } from '../types'
-import { getAllMatches, saveMatch, deleteMember, saveMember, deleteMatch, watchMatches } from '../utils/firebaseDB'
+import { getAllMatches, saveMatch, deleteMember, saveMember, deleteMatch, watchMatches } from '../utils/db'
 import '../styles/Calendar.css'
 import MatchDetail from './MatchDetail'
 import MatchModal from './MatchModal'

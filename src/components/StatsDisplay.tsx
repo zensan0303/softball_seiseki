@@ -11,6 +11,27 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
 
   const totalRuns = playerStats.reduce((sum, p) => sum + p.totalRuns, 0)
 
+  // 打球傾向の判定
+  const getBattingTendency = (stat: PlayerOverallStats): string => {
+    if (!stat.hitDirectionTotal || stat.hitDirectionTotal === 0) {
+      return '-'
+    }
+    
+    const pullRate = stat.pullRate || 0
+    const oppositeRate = stat.oppositeRate || 0
+    const centerRate = stat.centerRate || 0
+    
+    if (pullRate > oppositeRate + 15) {
+      return '引っ張りタイプ'
+    } else if (oppositeRate > pullRate + 15) {
+      return '流し打ちタイプ'
+    } else if (centerRate > 40) {
+      return 'センター返しタイプ'
+    } else {
+      return 'バランス型'
+    }
+  }
+
   return (
     <div className="stats-display">
       <h3>vs {opponent} 成績表</h3>
@@ -73,6 +94,61 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
         <p className="empty-message">成績がまだ入力されていません</p>
       )}
 
+      {/* 打球方向の特性表示 */}
+      <div className="batting-tendency-section">
+        <h4>打球方向の特性</h4>
+        <div className="tendency-cards">
+          {sortedStats
+            .filter(stat => stat.hitDirectionTotal && stat.hitDirectionTotal > 0)
+            .map((stat) => (
+              <div key={stat.playerId} className="tendency-card">
+                <div className="tendency-header">
+                  <h5>{stat.name}</h5>
+                  <span className="tendency-label">{getBattingTendency(stat)}</span>
+                </div>
+                <div className="tendency-stats">
+                  <div className="tendency-bar-container">
+                    <div className="tendency-bar-label">引っ張り</div>
+                    <div className="tendency-bar">
+                      <div 
+                        className="tendency-bar-fill pull"
+                        style={{ width: `${stat.pullRate}%` }}
+                      />
+                    </div>
+                    <div className="tendency-bar-value">{stat.pullRate}%</div>
+                  </div>
+                  <div className="tendency-bar-container">
+                    <div className="tendency-bar-label">センター</div>
+                    <div className="tendency-bar">
+                      <div 
+                        className="tendency-bar-fill center"
+                        style={{ width: `${stat.centerRate}%` }}
+                      />
+                    </div>
+                    <div className="tendency-bar-value">{stat.centerRate}%</div>
+                  </div>
+                  <div className="tendency-bar-container">
+                    <div className="tendency-bar-label">流し打ち</div>
+                    <div className="tendency-bar">
+                      <div 
+                        className="tendency-bar-fill opposite"
+                        style={{ width: `${stat.oppositeRate}%` }}
+                      />
+                    </div>
+                    <div className="tendency-bar-value">{stat.oppositeRate}%</div>
+                  </div>
+                  <div className="tendency-sample-size">
+                    データ数: {stat.hitDirectionTotal}打席
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
+        {sortedStats.every(stat => !stat.hitDirectionTotal || stat.hitDirectionTotal === 0) && (
+          <p className="empty-message">打球方向のデータがまだ入力されていません</p>
+        )}
+      </div>
+
       <div className="stats-legend">
         <h4>統計値の説明</h4>
         <ul>
@@ -84,6 +160,7 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
           <li><strong>犠打</strong>: ランナーを進塁させるために報告された犠打</li>
           <li><strong>犠フライ</strong>: ランナーを帰塁させるために打たれた犠フライ</li>
           <li><strong>エラー</strong>: 相手チームのエラーで出塁した数</li>
+          <li><strong>打球方向</strong>: 右打者の場合、引っ張り=左方向、流し=右方向</li>
         </ul>
       </div>
     </div>

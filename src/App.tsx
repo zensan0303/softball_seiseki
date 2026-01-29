@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Member } from './types'
-import { getAllMembers, saveAllMembers, watchMembers } from './utils/firebaseDB'
+import { getAllMembers, saveAllMembers, watchMembers } from './utils/db'
 import './App.css'
 import Calendar from './components/Calendar'
 

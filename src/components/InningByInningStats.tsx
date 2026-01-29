@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import type { Member, PlayerStats, InningStats } from '../types'
+import type { Member, PlayerStats, InningStats, HitDirection } from '../types'
+import FieldDiagram from './FieldDiagram'
 import '../styles/InningByInningStats.css'
 
 type ResultType = 'out' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
@@ -227,7 +228,7 @@ export default function InningByInningStats({
     setRunners(newRunners)
   }
 
-  const handleResultClick = (memberId: string, inningNumber: number, result: ResultType, rbi: number = 0, atBatIndex: number = 0) => {
+  const handleResultClick = (memberId: string, inningNumber: number, result: ResultType, rbi: number = 0, atBatIndex: number = 0, hitDirection?: HitDirection) => {
     const allInningsInThisInning = memberStatsMap.get(memberId)?.filter(i => i.inningNumber === inningNumber) || []
     const currentInning = allInningsInThisInning[atBatIndex]
     let updatedInning: InningStats
@@ -267,6 +268,11 @@ export default function InningByInningStats({
     updatedInning.sacrificeFlies = 0
     updatedInning.errors = 0
     updatedInning.rbis = rbi
+    
+    // 打球方向を設定
+    if (hitDirection !== undefined) {
+      updatedInning.hitDirection = hitDirection
+    }
 
     // 結果に応じて更新
     if (result === 'out') {
@@ -584,7 +590,7 @@ export default function InningByInningStats({
                         inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
-                        onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
+                        onSelect={(result, rbi, atBatIndex, hitDirection) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex, hitDirection)}
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
@@ -621,7 +627,7 @@ interface ResultSelectorProps {
   inningNumber: number
   inning: InningStats | undefined
   allInnings: InningStats[]
-  onSelect: (result: ResultType, rbi: number, atBatIndex: number) => void
+  onSelect: (result: ResultType, rbi: number, atBatIndex: number, hitDirection?: HitDirection) => void
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
@@ -631,8 +637,11 @@ interface ResultSelectorProps {
 
 function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
+  const [showFieldDiagram, setShowFieldDiagram] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
+  const [selectedHitDirection, setSelectedHitDirection] = useState<HitDirection>(null)
+  const [fieldDiagramMode, setFieldDiagramMode] = useState<'all' | 'infield-only'>('all')
   const currentAtBat = allInnings && allInnings.length > 0 ? allInnings[0] : inning
   const hasMultipleAtBats = allInnings && allInnings.length > 1
 
@@ -640,27 +649,59 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     setSelectedResult(result)
     setSelectedAtBatIndex(atBatIndex)
     
-    if (result === 'out' || result === 'walk' || result === '') {
-      onSelect(result, 0, atBatIndex)
+    if (result === 'walk' || result === '') {
+      onSelect(result, 0, atBatIndex, selectedHitDirection)
+      setShowRBISelect(false)
+      setShowFieldDiagram(false)
+      setSelectedHitDirection(null)
+    } else if (result === 'out') {
+      // アウトの場合は守備位置のみ表示
+      setFieldDiagramMode('infield-only')
+      setShowFieldDiagram(true)
       setShowRBISelect(false)
     } else if (result === 'homerun') {
-      setShowRBISelect(true)
-    } else if (result === 'single' || result === 'double' || result === 'triple') {
-      setShowRBISelect(true)
-    } else if (result === 'sacrifice-bunt' || result === 'sacrifice-fly') {
-      setShowRBISelect(true)
-    } else {
-      onSelect(result, 0, atBatIndex)
+      setFieldDiagramMode('all')
+      setShowFieldDiagram(true)
       setShowRBISelect(false)
+    } else if (result === 'single' || result === 'double' || result === 'triple') {
+      setFieldDiagramMode('all')
+      setShowFieldDiagram(true)
+      setShowRBISelect(false)
+    } else if (result === 'sacrifice-bunt' || result === 'sacrifice-fly') {
+      setFieldDiagramMode('all')
+      setShowFieldDiagram(true)
+      setShowRBISelect(false)
+    } else {
+      onSelect(result, 0, atBatIndex, null)
+      setShowRBISelect(false)
+      setShowFieldDiagram(false)
+      setSelectedHitDirection(null)
+    }
+  }
+
+  const handleHitDirectionSelect = (direction: HitDirection) => {
+    setSelectedHitDirection(direction)
+    // アウトの場合は打点選択をスキップ
+    if (selectedResult === 'out') {
+      onSelect(selectedResult, 0, selectedAtBatIndex, direction)
+      setShowFieldDiagram(false)
+      setSelectedResult('')
+      setSelectedHitDirection(null)
+    } else {
+      // ヒット系は打点選択に進む
+      setShowFieldDiagram(false)
+      setShowRBISelect(true)
     }
   }
 
   const handleRBISelect = (rbi: number) => {
     if (selectedResult) {
-      onSelect(selectedResult, rbi, selectedAtBatIndex)
+      onSelect(selectedResult, rbi, selectedAtBatIndex, selectedHitDirection)
     }
     setShowRBISelect(false)
+    setShowFieldDiagram(false)
     setSelectedResult('')
+    setSelectedHitDirection(null)
   }
 
   const handleAddStolenBase = () => {
@@ -680,22 +721,66 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
 
   return (
     <div className="result-selector">
-      {showRBISelect ? (
-        <div className="rbi-select-panel">
-          <div className="rbi-label">打点数を選択</div>
-          <div className="rbi-buttons">
-            {[0, 1, 2, 3, 4].map((rbi) => (
-              <button
-                key={rbi}
-                className="rbi-btn"
-                onClick={() => handleRBISelect(rbi)}
+      {showFieldDiagram && (
+        <>
+          <div className="modal-overlay" onClick={() => {
+            setShowFieldDiagram(false)
+            setSelectedResult('')
+            setSelectedHitDirection(null)
+          }} />
+          <div className="field-diagram-panel">
+            <FieldDiagram
+              selectedDirection={selectedHitDirection}
+              onSelect={handleHitDirectionSelect}
+              mode={fieldDiagramMode}
+            />
+            <div className="field-diagram-actions">
+              <button 
+                className="btn-skip-direction"
+                onClick={() => {
+                  if (selectedResult === 'out') {
+                    // アウトの場合は打点選択をスキップして直接完了
+                    onSelect(selectedResult, 0, selectedAtBatIndex, null)
+                    setShowFieldDiagram(false)
+                    setSelectedResult('')
+                    setSelectedHitDirection(null)
+                  } else {
+                    // ヒット系は打点選択に進む
+                    setShowFieldDiagram(false)
+                    setShowRBISelect(true)
+                  }
+                }}
               >
-                {rbi}
+                スキップ（{selectedResult === 'out' ? '守備位置なし' : '打球方向なし'}）
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-      ) : (
+        </>
+      )}
+      {showRBISelect && !showFieldDiagram && (
+        <>
+          <div className="modal-overlay" onClick={() => {
+            setShowRBISelect(false)
+            setSelectedResult('')
+            setSelectedHitDirection(null)
+          }} />
+          <div className="rbi-select-panel">
+            <div className="rbi-label">打点数を選択</div>
+            <div className="rbi-buttons">
+              {[0, 1, 2, 3, 4].map((rbi) => (
+                <button
+                  key={rbi}
+                  className="rbi-btn"
+                  onClick={() => handleRBISelect(rbi)}
+                >
+                  {rbi}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+      {!showFieldDiagram && !showRBISelect && (
         <>
           <div className="result-display">
             {displayText}

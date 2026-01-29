@@ -407,55 +407,110 @@
   color: white;
 }
 
-/* RBI選択パネル */
-.rbi-select-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  padding: 4px;
-}
-
-.rbi-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #667eea;
-  text-align: center;
-}
-
-.rbi-buttons {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-}
-
-.rbi-btn {
-  padding: 4px 2px;
-  background-color: #667eea;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.rbi-btn:hover {
-  background-color: #764ba2;
-  transform: scale(1.05);
-}
-
-.rbi-btn:active {
-  transform: scale(0.95);
-}
-
 .empty-message {
   text-align: center;
   color: #999;
   padding: 40px 20px;
   font-style: italic;
   font-size: 14px;
+}
+
+/* モーダルオーバーレイ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  cursor: pointer;
+}
+
+/* 打球方向選択パネル */
+.field-diagram-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  z-index: 10000;
+  max-width: 500px;
+  width: 90%;
+}
+
+.field-diagram-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-skip-direction {
+  padding: 8px 16px;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-skip-direction:hover {
+  background-color: #4b5563;
+}
+
+/* RBI選択パネル */
+.rbi-select-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  z-index: 10000;
+  min-width: 300px;
+}
+
+.rbi-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.rbi-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.rbi-btn {
+  padding: 12px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 50px;
+}
+
+.rbi-btn:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+}
+
+.rbi-btn:active {
+  transform: translateY(0);
 }
 
 /* レスポンシブ対応 */
