@@ -31,14 +31,15 @@ export default function MemberList({
 
   // メンバーを打順でマップ（打順 -> Member）
   const membersByOrder = new Map<number, Member>()
-  members.forEach(m => {
+  const safeMembers = members || []
+  safeMembers.forEach(m => {
     if (m.battingOrder && m.battingOrder >= 1 && m.battingOrder <= 9) {
       membersByOrder.set(m.battingOrder, m)
     }
   })
 
   // 打順が未設定のメンバー
-  const unorderedMembers = members.filter(m => !m.battingOrder || m.battingOrder < 1 || m.battingOrder > 9)
+  const unorderedMembers = safeMembers.filter(m => !m.battingOrder || m.battingOrder < 1 || m.battingOrder > 9)
 
   // 各打順で利用可能なメンバー（別の打順に割り当てられていない）
   const getAvailableMembersForOrder = (order: number) => {
@@ -49,18 +50,39 @@ export default function MemberList({
       }
     })
     
-    return [
-      ...globalMembers.filter(m => !assignedToOtherOrders.has(m.id)),
-      ...unorderedMembers.filter(m => !assignedToOtherOrders.has(m.id)),
-    ]
+    // グローバルメンバーと現在のメンバーをマージして、重複を排除
+    const allAvailableMembers = new Map<string, Member>()
+    
+    // まずグローバルメンバーを追加
+    globalMembers.forEach(m => {
+      if (!assignedToOtherOrders.has(m.id)) {
+        allAvailableMembers.set(m.id, m)
+      }
+    })
+    
+    // 打順未設定のメンバーを追加
+    unorderedMembers.forEach(m => {
+      if (!assignedToOtherOrders.has(m.id)) {
+        allAvailableMembers.set(m.id, m)
+      }
+    })
+    
+    return Array.from(allAvailableMembers.values())
   }
 
   const handleAssignMember = (battingOrder: number, memberId: string) => {
     if (!memberId) {
-      // 割り当てを解除
+      // 割り当てを解除（メンバーリストから削除）
       const member = membersByOrder.get(battingOrder)
       if (member) {
-        onUpdateMember({ ...member, battingOrder: undefined })
+        // グローバルメンバーにある選手の場合は打順を解除
+        // グローバルメンバーにない場合は完全削除
+        if (globalMembers.some(gm => gm.id === member.id)) {
+          onUpdateMember({ ...member, battingOrder: undefined })
+        } else {
+          // この試合にのみ登録されている選手は削除
+          onRemoveMember(member.id)
+        }
       }
       return
     }

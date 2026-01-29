@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Match, Member } from '../types'
-import { getAllMatches, saveMatch, deleteMember, saveMember, deleteMatch } from '../utils/indexedDB'
+import { getAllMatches, saveMatch, deleteMember, saveMember, deleteMatch, watchMatches } from '../utils/firebaseDB'
 import '../styles/Calendar.css'
 import MatchDetail from './MatchDetail'
 import MatchModal from './MatchModal'
@@ -9,27 +9,37 @@ interface CalendarProps {
   globalMembers: Member[]
   onAddMember: (name: string) => void
   onRemoveMember: (memberId: string) => void
+  onUpdateMember: (member: Member) => boolean
 }
 
-export default function Calendar({ globalMembers, onAddMember, onRemoveMember }: CalendarProps) {
+export default function Calendar({ globalMembers, onAddMember, onRemoveMember, onUpdateMember }: CalendarProps) {
   const [matches, setMatches] = useState<Match[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 27))
   const [viewMode, setViewMode] = useState<'calendar' | 'monthly' | 'yearly' | 'all'>('calendar')
 
-  // IndexedDBからマッチを読み込み
+  // Firebaseからマッチを読み込み
   useEffect(() => {
     const loadMatches = async () => {
       try {
         const savedMatches = await getAllMatches()
         setMatches(savedMatches)
       } catch (error) {
-        console.error('Failed to load matches from IndexedDB:', error)
+        console.error('Failed to load matches from Firebase:', error)
       }
     }
 
     loadMatches()
+
+    // リアルタイム監視を設定（他のユーザーの変更を自動反映）
+    const unsubscribe = watchMatches((updatedMatches) => {
+      setMatches(updatedMatches)
+    })
+
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   const handleAddMatch = (opponent: string, date: string) => {
@@ -42,9 +52,10 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember }:
     }
     setMatches([...matches, newMatch])
     setIsModalOpen(false)
-    // IndexedDBに保存
+    // Firebaseに保存
     saveMatch(newMatch).catch((error) => {
-      console.error('Failed to save match to IndexedDB:', error)
+      console.error('Failed to save match to Firebase:', error)
+      alert('試合の保存に失敗しました')
     })
   }
 
@@ -75,13 +86,13 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember }:
 
   const handleUpdateGlobalMember = async (member: Member) => {
     try {
-      await saveMember(member)
-      // グローバル選手の更新を反映するため親へ通知
-      // ここでは既存の削除→追加フローで対応
-      onRemoveMember(member.id)
-      onAddMember(member.name)
+      const success = onUpdateMember(member)
+      if (success) {
+        await saveMember(member)
+      }
     } catch (error) {
       console.error('Failed to update member:', error)
+      // エラーをサイレントに処理
     }
   }
 
@@ -170,8 +181,8 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember }:
     return Object.values(memberStats).sort((a, b) => b.matches - a.matches)
   }
 
-  const getRankings = (memberStatsArray: typeof Object) => {
-    const stats = memberStatsArray as any[]
+  const getRankings = (memberStatsArray: ReturnType<typeof getMemberStatsForMatches>) => {
+    const stats = memberStatsArray
     if (stats.length === 0) return {}
 
     return {
@@ -440,9 +451,10 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember }:
           onUpdate={(updatedMatch) => {
             setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)
-            // IndexedDBに保存
+            // Firebaseに保存
             saveMatch(updatedMatch).catch((error) => {
-              console.error('Failed to save updated match to IndexedDB:', error)
+              console.error('Failed to save updated match to Firebase:', error)
+              // エラーをサイレントに処理
             })
           }}
         />

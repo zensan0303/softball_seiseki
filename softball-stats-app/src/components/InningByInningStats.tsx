@@ -502,8 +502,9 @@ export default function InningByInningStats({
   }
 
   const getMembersByBattingOrder = (): Member[] => {
+    if (!members || members.length === 0) return []
     return members
-      .filter(m => m.battingOrder && m.battingOrder > 0)
+      .filter(m => m && m.battingOrder && m.battingOrder > 0)
       .sort((a, b) => (a.battingOrder || 0) - (b.battingOrder || 0))
   }
 
@@ -632,8 +633,8 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
-  const currentAtBat = allInnings.length > 0 ? allInnings[0] : inning
-  const hasMultipleAtBats = allInnings.length > 1
+  const currentAtBat = allInnings && allInnings.length > 0 ? allInnings[0] : inning
+  const hasMultipleAtBats = allInnings && allInnings.length > 1
 
   const handleResultChange = (result: ResultType, atBatIndex: number = 0) => {
     setSelectedResult(result)
@@ -655,8 +656,11 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   }
 
   const handleRBISelect = (rbi: number) => {
-    onSelect(selectedResult, rbi, selectedAtBatIndex)
+    if (selectedResult) {
+      onSelect(selectedResult, rbi, selectedAtBatIndex)
+    }
     setShowRBISelect(false)
+    setSelectedResult('')
   }
 
   const handleAddStolenBase = () => {
@@ -671,7 +675,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     onUpdateStolenBases(-1)
   }
 
-  const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis) : '-'
+  const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
   const currentResult = inning ? getResultLabelForSelector(inning) : ''
 
   return (
@@ -811,8 +815,9 @@ function getDisplayText(result: ResultType, rbi: number): string {
   
   const resultText = resultMap[result] || '-'
   
-  // 本塁打の場合、打点を表示
-  if (result === 'homerun' && rbi > 0) {
+  // ヒット系や犠打・犠飛の場合、打点があれば表示
+  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly'].includes(result)
+  if (hasRBI && rbi > 0) {
     return `${resultText}(${rbi})`
   }
   
