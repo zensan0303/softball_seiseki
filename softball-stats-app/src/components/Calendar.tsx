@@ -456,7 +456,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onUpdate={async (updatedMatch) => {
             // 楽観的更新（UIの即座な反応のため）
             setMatches((prevMatches) => prevMatches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
-            setSelectedMatch(updatedMatch)
+            // selectedMatchはwatchMatchesリスナーで自動更新されるため、ここでは更新不要
             
             try {
               // Firebaseに保存（リアルタイムリスナーが自動的に同期します）
