@@ -455,7 +455,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onDeleteMatch={handleDeleteMatch}
           onUpdate={async (updatedMatch) => {
             // 楽観的更新（UIの即座な反応のため）
-            setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
+            setMatches((prevMatches) => prevMatches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)
             
             try {
