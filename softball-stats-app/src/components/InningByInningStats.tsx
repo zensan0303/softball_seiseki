@@ -814,14 +814,14 @@ function ResultSelector({ member, inningNumber, inning, allInnings, onSelect, on
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
   const currentResult = inning ? getResultLabelForSelector(inning) : ''
 
-  const handleCellClick = () => {
-    if (onOpenInputScreen && !isClosed) {
-      onOpenInputScreen(member, inningNumber)
-    }
-  }
+  // const handleCellClick = () => {
+  //   if (onOpenInputScreen && !isClosed) {
+  //     onOpenInputScreen(member, inningNumber)
+  //   }
+  // }
 
   return (
-    <div className="result-selector" onClick={handleCellClick} style={{ cursor: onOpenInputScreen && !isClosed ? 'pointer' : 'default' }}>
+    <div className="result-selector">{/* onClick={handleCellClick} style={{ cursor: onOpenInputScreen && !isClosed ? 'pointer' : 'default' }} */}
       {showRBISelect ? (
         <div className="rbi-select-panel">
           <div className="rbi-label">打点数を選択</div>
