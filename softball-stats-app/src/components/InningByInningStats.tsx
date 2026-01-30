@@ -31,6 +31,8 @@ export default function InningByInningStats({
     const subsSet = new Set<string>()
     
     stats.forEach((playerStats) => {
+      if (!playerStats || !playerStats.innings) return // 無効なデータはスキップ
+      
       newMap.set(playerStats.playerId, playerStats.innings)
       const inningNumbers = playerStats.innings.map(i => i.inningNumber)
       if (inningNumbers.length > 0) {
