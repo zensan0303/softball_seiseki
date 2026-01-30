@@ -66,11 +66,13 @@ export const aggregateStats = (allStats: PlayerStats[]): PlayerOverallStats[] =>
 
   // 同じプレイヤーの成績を集計
   allStats.forEach(stat => {
+    if (!stat || !stat.innings) return // 無効なデータはスキップ
+    
     const existing = statsMap.get(stat.playerId)
     if (existing) {
       statsMap.set(stat.playerId, {
         playerId: stat.playerId,
-        innings: [...existing.innings, ...stat.innings],
+        innings: [...(existing.innings || []), ...(stat.innings || [])],
       })
     } else {
       statsMap.set(stat.playerId, { ...stat })
@@ -78,9 +80,11 @@ export const aggregateStats = (allStats: PlayerStats[]): PlayerOverallStats[] =>
   })
 
   // 統計を計算
-  return Array.from(statsMap.values()).map(stats => ({
-    playerId: stats.playerId,
-    name: '', // ここでは名前は別途取得する
-    ...calculatePlayerStats(stats),
-  }))
+  return Array.from(statsMap.values())
+    .filter(stats => stats && stats.innings) // 有効なデータのみ
+    .map(stats => ({
+      playerId: stats.playerId,
+      name: '', // ここでは名前は別途取得する
+      ...calculatePlayerStats(stats),
+    }))
 }

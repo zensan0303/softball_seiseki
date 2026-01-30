@@ -8,14 +8,12 @@ interface InningByInningStatsProps {
   members: Member[]
   stats: Map<string, PlayerStats>
   onUpdateStats: (playerId: string, stats: PlayerStats) => void
-  onOpenInputScreen?: (member: Member, inning: number) => void
 }
 
 export default function InningByInningStats({
   members,
   stats,
   onUpdateStats,
-  onOpenInputScreen,
 }: InningByInningStatsProps) {
   const [maxInnings, setMaxInnings] = useState<number>(9)
   const [memberStatsMap, setMemberStatsMap] = useState<Map<string, InningStats[]>>(new Map())
@@ -31,6 +29,8 @@ export default function InningByInningStats({
     const subsSet = new Set<string>()
     
     stats.forEach((playerStats) => {
+      if (!playerStats || !playerStats.innings) return // 無効なデータはスキップ
+      
       newMap.set(playerStats.playerId, playerStats.innings)
       const inningNumbers = playerStats.innings.map(i => i.inningNumber)
       if (inningNumbers.length > 0) {
@@ -637,15 +637,12 @@ export default function InningByInningStats({
                     >
                       <ResultSelector
                         memberId={member.id}
-                        member={member}
-                        inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
                         onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
-                        onOpenInputScreen={onOpenInputScreen}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                       />
@@ -687,15 +684,12 @@ export default function InningByInningStats({
                     >
                       <ResultSelector
                         memberId={member.id}
-                        member={member}
-                        inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
                         onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
-                        onOpenInputScreen={onOpenInputScreen}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                       />
@@ -749,20 +743,17 @@ export default function InningByInningStats({
 
 interface ResultSelectorProps {
   memberId: string
-  member: Member
-  inningNumber: number
   inning: InningStats | undefined
   allInnings: InningStats[]
   onSelect: (result: ResultType, rbi: number, atBatIndex: number) => void
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
-  onOpenInputScreen?: (member: Member, inning: number) => void
   isClosed: boolean
   canAddAtBat: boolean
 }
 
-function ResultSelector({ member, inningNumber, inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, onOpenInputScreen, isClosed, canAddAtBat }: ResultSelectorProps) {
+function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
@@ -814,14 +805,8 @@ function ResultSelector({ member, inningNumber, inning, allInnings, onSelect, on
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
   const currentResult = inning ? getResultLabelForSelector(inning) : ''
 
-  const handleCellClick = () => {
-    if (onOpenInputScreen && !isClosed) {
-      onOpenInputScreen(member, inningNumber)
-    }
-  }
-
   return (
-    <div className="result-selector" onClick={handleCellClick} style={{ cursor: onOpenInputScreen && !isClosed ? 'pointer' : 'default' }}>
+    <div className="result-selector">
       {showRBISelect ? (
         <div className="rbi-select-panel">
           <div className="rbi-label">打点数を選択</div>
