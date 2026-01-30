@@ -2,7 +2,8 @@ import type { PlayerStats, PlayerOverallStats } from '../types'
 
 export const calculatePlayerStats = (stats: PlayerStats): Omit<PlayerOverallStats, 'playerId' | 'name'> => {
   // 全ての回の成績を合計
-  const totals = stats.innings.reduce(
+  const innings = stats?.innings || []
+  const totals = innings.reduce(
     (acc, inning) => ({
       atBats: acc.atBats + inning.atBats,
       hits: acc.hits + inning.hits,

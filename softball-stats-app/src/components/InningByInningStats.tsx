@@ -8,12 +8,14 @@ interface InningByInningStatsProps {
   members: Member[]
   stats: Map<string, PlayerStats>
   onUpdateStats: (playerId: string, stats: PlayerStats) => void
+  onOpenInputScreen?: (member: Member, inning: number) => void
 }
 
 export default function InningByInningStats({
   members,
   stats,
   onUpdateStats,
+  onOpenInputScreen,
 }: InningByInningStatsProps) {
   const [maxInnings, setMaxInnings] = useState<number>(9)
   const [memberStatsMap, setMemberStatsMap] = useState<Map<string, InningStats[]>>(new Map())
@@ -635,6 +637,7 @@ export default function InningByInningStats({
                     >
                       <ResultSelector
                         memberId={member.id}
+                        member={member}
                         inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
@@ -642,6 +645,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onOpenInputScreen={onOpenInputScreen}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                       />
@@ -683,6 +687,7 @@ export default function InningByInningStats({
                     >
                       <ResultSelector
                         memberId={member.id}
+                        member={member}
                         inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
@@ -690,6 +695,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onOpenInputScreen={onOpenInputScreen}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                       />
@@ -743,6 +749,7 @@ export default function InningByInningStats({
 
 interface ResultSelectorProps {
   memberId: string
+  member: Member
   inningNumber: number
   inning: InningStats | undefined
   allInnings: InningStats[]
@@ -750,11 +757,12 @@ interface ResultSelectorProps {
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
+  onOpenInputScreen?: (member: Member, inning: number) => void
   isClosed: boolean
   canAddAtBat: boolean
 }
 
-function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat }: ResultSelectorProps) {
+function ResultSelector({ member, inningNumber, inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, onOpenInputScreen, isClosed, canAddAtBat }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
@@ -806,8 +814,14 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
   const currentResult = inning ? getResultLabelForSelector(inning) : ''
 
+  const handleCellClick = () => {
+    if (onOpenInputScreen && !isClosed) {
+      onOpenInputScreen(member, inningNumber)
+    }
+  }
+
   return (
-    <div className="result-selector">
+    <div className="result-selector" onClick={handleCellClick} style={{ cursor: onOpenInputScreen && !isClosed ? 'pointer' : 'default' }}>
       {showRBISelect ? (
         <div className="rbi-select-panel">
           <div className="rbi-label">打点数を選択</div>
@@ -930,6 +944,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
 function getDisplayText(result: ResultType, rbi: number): string {
   const resultMap: Record<ResultType, string> = {
     out: 'O',
+    'out-rbi': 'OR',
     single: '1H',
     double: '2H',
     triple: '3H',
@@ -945,8 +960,8 @@ function getDisplayText(result: ResultType, rbi: number): string {
   
   const resultText = resultMap[result] || '-'
   
-  // ヒット系や犠打・犠飛の場合、打点があれば表示
-  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly'].includes(result)
+  // ヒット系や犠打・犠飛、アウト(打点)の場合、打点があれば表示
+  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly', 'out-rbi'].includes(result)
   if (hasRBI && rbi > 0) {
     return `${resultText}(${rbi})`
   }
@@ -955,7 +970,8 @@ function getDisplayText(result: ResultType, rbi: number): string {
 }
 
 function getResultLabelForSelector(inning: InningStats): ResultType {
-  if (inning.walks > 0) return 'walk'
+  if (inning.walks > 0 && inning.deadBalls === 0) return 'walk'
+  if (inning.deadBalls > 0) return 'dead-ball'
   if (inning.stolenBases > 0) return 'stolen-base'
   if (inning.sacrificeBunts > 0) return 'sacrifice-bunt'
   if (inning.sacrificeFlies > 0) return 'sacrifice-fly'
@@ -964,6 +980,7 @@ function getResultLabelForSelector(inning: InningStats): ResultType {
   if (inning.triples > 0) return 'triple'
   if (inning.doubles > 0) return 'double'
   if (inning.hits > 0) return 'single'
+  if (inning.atBats > 0 && inning.rbis > 0) return 'out-rbi'
   if (inning.atBats > 0) return 'out'
   return ''
 }

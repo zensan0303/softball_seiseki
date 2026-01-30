@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { Match, Member, PlayerStats } from '../types'
+import type { Match, Member, PlayerStats, HitDirection } from '../types'
 import { calculatePlayerStats } from '../utils/statsCalculator'
 import '../styles/MatchDetail.css'
 import MemberList from './MemberList'
 import InningByInningStats from './InningByInningStats'
 import StatsDisplay from './StatsDisplay'
+import InningInputScreen from './InningInputScreen'
 
 interface MatchDetailProps {
   match: Match
@@ -29,6 +30,7 @@ export default function MatchDetail({
   onDeleteMatch,
 }: MatchDetailProps) {
   const [tab, setTab] = useState<'members' | 'stats' | 'results'>('members')
+  const [inputMode, setInputMode] = useState<{ active: boolean; member?: Member; inning?: number }>({ active: false })
 
   const handleDeleteMatch = () => {
     if (confirm(`「${match.date} vs ${match.opponent}」を削除してもよろしいですか？`)) {
@@ -77,11 +79,123 @@ export default function MatchDetail({
     return match.members.find(m => m.id === playerId)?.name || '不明'
   }
 
-  const playerOverallStats = Array.from(match.stats.entries()).map(([playerId, stats]) => ({
-    playerId,
-    name: getPlayerName(playerId),
-    ...calculatePlayerStats(stats),
-  }))
+  const playerOverallStats = Array.from(match.stats.entries())
+    .filter(([_, stats]) => stats && stats.innings) // statsとinningsが存在する場合のみ
+    .map(([playerId, stats]) => ({
+      playerId,
+      name: getPlayerName(playerId),
+      ...calculatePlayerStats(stats),
+    }))
+
+  const handleOpenInputScreen = (member: Member, inning: number) => {
+    setInputMode({ active: true, member, inning })
+  }
+
+  const handleCloseInputScreen = () => {
+    setInputMode({ active: false })
+  }
+
+  const handleSaveInningStats = (result: string, hitDirection: HitDirection, rbi: number) => {
+    if (!inputMode.member || !inputMode.inning) return
+
+    const memberId = inputMode.member.id
+    const inningNumber = inputMode.inning
+
+    // 既存の成績を取得
+    const playerStats = match.stats.get(memberId)
+    const existingInnings = playerStats?.innings || []
+    const inningStats = existingInnings.find(i => i.inningNumber === inningNumber)
+
+    let updatedInning: any = inningStats ? { ...inningStats } : {
+      inningNumber,
+      battingOrder: inputMode.member.battingOrder,
+      atBats: 0,
+      hits: 0,
+      walks: 0,
+      runs: 0,
+      rbis: 0,
+      doubles: 0,
+      triples: 0,
+      homeRuns: 0,
+      stolenBases: 0,
+      sacrificeBunts: 0,
+      sacrificeFlies: 0,
+      errors: 0,
+      deadBalls: 0,
+    }
+
+    // リセット
+    updatedInning.atBats = 0
+    updatedInning.hits = 0
+    updatedInning.walks = 0
+    updatedInning.doubles = 0
+    updatedInning.triples = 0
+    updatedInning.homeRuns = 0
+    updatedInning.sacrificeBunts = 0
+    updatedInning.sacrificeFlies = 0
+    updatedInning.errors = 0
+    updatedInning.rbis = rbi
+    updatedInning.hitDirection = hitDirection
+
+    // 結果に応じて更新
+    if (result === 'out') {
+      updatedInning.atBats = 1
+    } else if (result === 'out-rbi') {
+      updatedInning.atBats = 1
+      updatedInning.rbis = rbi > 0 ? rbi : 1
+    } else if (result === 'single') {
+      updatedInning.atBats = 1
+      updatedInning.hits = 1
+    } else if (result === 'double') {
+      updatedInning.atBats = 1
+      updatedInning.hits = 1
+      updatedInning.doubles = 1
+    } else if (result === 'triple') {
+      updatedInning.atBats = 1
+      updatedInning.hits = 1
+      updatedInning.triples = 1
+    } else if (result === 'homerun') {
+      updatedInning.atBats = 1
+      updatedInning.hits = 1
+      updatedInning.homeRuns = 1
+      updatedInning.runs = 1
+      if (rbi > 0) {
+        updatedInning.rbis = rbi
+      }
+    } else if (result === 'walk') {
+      updatedInning.walks = 1
+    } else if (result === 'stolen-base') {
+      updatedInning.stolenBases = 1
+    } else if (result === 'sacrifice-bunt') {
+      updatedInning.sacrificeBunts = 1
+    } else if (result === 'sacrifice-fly') {
+      updatedInning.sacrificeFlies = 1
+    } else if (result === 'error') {
+      updatedInning.errors = 1
+    } else if (result === 'dead-ball') {
+      updatedInning.deadBalls = 1
+      updatedInning.walks = 1
+    }
+
+    // 成績を更新
+    const otherInnings = existingInnings.filter(i => i.inningNumber !== inningNumber)
+    const updatedInnings = [...otherInnings, updatedInning].sort((a, b) => a.inningNumber - b.inningNumber)
+
+    handleUpdateStats(memberId, { playerId: memberId, innings: updatedInnings })
+    handleCloseInputScreen()
+  }
+
+  // 成績入力画面が開いている場合
+  if (inputMode.active && inputMode.member && inputMode.inning) {
+    return (
+      <InningInputScreen
+        member={inputMode.member}
+        inningNumber={inputMode.inning}
+        onSave={handleSaveInningStats}
+        onCancel={handleCloseInputScreen}
+      />
+    )
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -134,6 +248,7 @@ export default function MatchDetail({
               members={match.members}
               stats={match.stats}
               onUpdateStats={handleUpdateStats}
+              onOpenInputScreen={handleOpenInputScreen}
             />
           )}
 
