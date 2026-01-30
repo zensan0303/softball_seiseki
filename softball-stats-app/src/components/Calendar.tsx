@@ -150,6 +150,8 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
 
     matchList.forEach(match => {
       match.stats.forEach((stats, playerId) => {
+        if (!stats || !stats.innings) return // 無効なデータはスキップ
+        
         const memberName = match.members.find(m => m.id === playerId)?.name || '不明'
         if (!memberStats[playerId]) {
           memberStats[playerId] = {
