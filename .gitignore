@@ -1,24 +1,21 @@
-# Dependencies
-node_modules/
-/.pnp
-.pnp.js
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Build outputs
-dist/
-build/
+node_modules
+dist
+dist-ssr
+*.local
 
 # Environment variables
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+.env.*.local
 
 # Editor directories and files
 .vscode/*
@@ -30,10 +27,3 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
-
-# Cache
-.cache/
-
-# Temporary files
-*.tmp
-*.temp

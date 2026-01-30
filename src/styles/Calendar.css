@@ -404,6 +404,29 @@
   font-weight: 600;
 }
 
+/* ランキングアイテムのスタイル */
+.ranking-item {
+  margin: 8px 0;
+  color: #333333;
+  font-size: 0.95rem;
+  padding: 4px 0;
+}
+
+.ranking-item.rank-1 {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.ranking-item.rank-2 {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.ranking-item.rank-3 {
+  color: #d4703c;
+  font-weight: 600;
+}
+
 .stats-table-all {
   width: 100%;
   border-collapse: collapse;
@@ -458,4 +481,18 @@
   padding: 40px;
   color: #666666;
   font-size: 1.1rem;
+}
+
+/* 規定打席未到達の選手をグレーアウト */
+.stats-table-all tbody tr.not-qualified {
+  opacity: 0.5;
+  background-color: #f9f9f9;
+}
+
+.stats-table-all tbody tr.not-qualified:hover {
+  background-color: #f0f0f0;
+}
+
+.stats-table-all tbody tr.not-qualified td {
+  color: #999999;
 }

@@ -5,11 +5,15 @@ export interface Member {
   battingOrder?: number  // 打順（1-9番）
 }
 
+// 打球方向の型定義
+export type HitDirection = 'left' | 'center' | 'right' | 'left-center' | 'right-center' | ''
+
 // 回ごとの成績
 export interface InningStats {
   inningNumber: number
   battingOrder?: number  // 打順（オプション）
   atBatNumber?: number   // 打席番号（同一回での複数打席に対応）
+  substitutePlayerId?: string  // 代打選手のID
   atBats: number      // 打数
   hits: number        // 安打
   walks: number       // 四死球
@@ -23,6 +27,7 @@ export interface InningStats {
   sacrificeFlies: number  // 犠フライ
   errors: number      // エラー
   deadBalls: number   // デッドボール（死球）
+  hitDirection?: HitDirection  // 打球方向
 }
 
 // 選手の個別成績（回ごと）

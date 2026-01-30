@@ -2,28 +2,33 @@ import { useState, useEffect } from 'react'
 import type { Member, PlayerStats, InningStats } from '../types'
 import '../styles/InningByInningStats.css'
 
-type ResultType = 'out' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
+type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
 
 interface InningByInningStatsProps {
   members: Member[]
   stats: Map<string, PlayerStats>
   onUpdateStats: (playerId: string, stats: PlayerStats) => void
+  onOpenInputScreen?: (member: Member, inning: number) => void
 }
 
 export default function InningByInningStats({
   members,
   stats,
   onUpdateStats,
+  onOpenInputScreen,
 }: InningByInningStatsProps) {
   const [maxInnings, setMaxInnings] = useState<number>(9)
   const [memberStatsMap, setMemberStatsMap] = useState<Map<string, InningStats[]>>(new Map())
   // ランナーを塁ごとに管理: { inningNumber: { 1塁: playerId[], 2塁: playerId[], 3塁: playerId[] } }
   const [runners, setRunners] = useState<Map<number, { bases: Map<number, Set<string>> }>>(new Map())
+  // 代打選手の管理
+  const [substituteMembers, setSubstituteMembers] = useState<Set<string>>(new Set())
 
   // マッチのstatsが更新されたときに各選手の成績を読み込み
   useEffect(() => {
     const newMap = new Map<string, InningStats[]>()
     let maxInning = 9
+    const subsSet = new Set<string>()
     
     stats.forEach((playerStats) => {
       newMap.set(playerStats.playerId, playerStats.innings)
@@ -31,10 +36,22 @@ export default function InningByInningStats({
       if (inningNumbers.length > 0) {
         maxInning = Math.max(maxInning, Math.max(...inningNumbers))
       }
+      
+      // 代打として出場した選手を復元
+      playerStats.innings.forEach((inning) => {
+        if (inning.substitutePlayerId) {
+          subsSet.add(playerStats.playerId)
+        }
+      })
     })
     
     setMemberStatsMap(newMap)
     setMaxInnings(maxInning)
+    setSubstituteMembers(prev => {
+      // 手動で追加された代打選手も保持
+      const combined = new Set([...subsSet, ...prev])
+      return combined
+    })
   }, [stats])
 
   const getInningStats = (memberId: string, inningNumber: number): InningStats | undefined => {
@@ -117,6 +134,41 @@ export default function InningByInningStats({
       }
     }
     return false
+  }
+
+  // 代打として追加可能な選手を取得（打順10番以降 or 打順なし）
+  const getAvailableSubstitutes = (): Member[] => {
+    return members.filter(m => 
+      !m.battingOrder || m.battingOrder === 0 || m.battingOrder >= 10
+    )
+  }
+
+  // 代打選手として追加された選手を取得
+  const getSubstituteMembers = (): Member[] => {
+    return members.filter(m => substituteMembers.has(m.id))
+  }
+
+  // 代打選手を追加
+  const handleAddSubstitute = (memberId: string) => {
+    setSubstituteMembers(prev => new Set([...prev, memberId]))
+  }
+
+  // 代打選手を削除
+  const handleRemoveSubstitute = (memberId: string) => {
+    setSubstituteMembers(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(memberId)
+      return newSet
+    })
+    
+    // その選手の成績をクリア
+    const playerStats = stats.get(memberId)
+    if (playerStats) {
+      onUpdateStats(memberId, {
+        ...playerStats,
+        innings: []
+      })
+    }
   }
 
   // ランナーを進塁させ、得点するランナーを計算
@@ -271,6 +323,10 @@ export default function InningByInningStats({
     // 結果に応じて更新
     if (result === 'out') {
       updatedInning.atBats = 1
+    } else if (result === 'out-rbi') {
+      // アウト（打点）：ゴロの間などでアウトだが打点がついた場合
+      updatedInning.atBats = 1
+      updatedInning.rbis = rbi > 0 ? rbi : 1
     } else if (result === 'single') {
       updatedInning.atBats = 1
       updatedInning.hits = 1
@@ -504,7 +560,7 @@ export default function InningByInningStats({
   const getMembersByBattingOrder = (): Member[] => {
     if (!members || members.length === 0) return []
     return members
-      .filter(m => m && m.battingOrder && m.battingOrder > 0)
+      .filter(m => m && m.battingOrder && m.battingOrder >= 1 && m.battingOrder <= 9)
       .sort((a, b) => (a.battingOrder || 0) - (b.battingOrder || 0))
   }
 
@@ -581,6 +637,7 @@ export default function InningByInningStats({
                     >
                       <ResultSelector
                         memberId={member.id}
+                        member={member}
                         inningNumber={inningNumber}
                         inning={inning}
                         allInnings={allInnings}
@@ -588,6 +645,57 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onOpenInputScreen={onOpenInputScreen}
+                        isClosed={isClosed}
+                        canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
+                      />
+                    </td>
+                  )
+                })}
+                <td className="cell-stat">{getTotalAtBats(member.id)}</td>
+                <td className="cell-stat">{getTotalHits(member.id)}</td>
+                <td className="cell-stat">{getTotalWalks(member.id)}</td>
+                <td className="cell-stat">{getTotalRBIs(member.id)}</td>
+                <td className="cell-stat">{getBattingAverage(member.id)}</td>
+              </tr>
+            ))}
+            {/* 代打選手の行 */}
+            {getSubstituteMembers().map((member) => (
+              <tr key={`substitute-${member.id}`} className="player-row substitute-row">
+                <td className="cell-batting-order">代</td>
+                <td className="cell-name">
+                  {member.name}
+                  <button
+                    className="btn-remove-substitute"
+                    onClick={() => handleRemoveSubstitute(member.id)}
+                    title="代打選手を削除"
+                  >
+                    ×
+                  </button>
+                </td>
+                {Array.from({ length: maxInnings }, (_, i) => {
+                  const inningNumber = i + 1
+                  const inning = getInningStats(member.id, inningNumber)
+                  const allInnings = getAllInningStats(member.id, inningNumber)
+                  const isClosed = false  // 代打選手は3アウトでもグレーアウトしない
+                  const hasMultipleAtBats = allInnings.length > 1
+                  
+                  return (
+                    <td
+                      key={inningNumber}
+                      className={`cell-result ${isClosed ? 'closed' : ''} ${hasMultipleAtBats ? 'multiple' : ''}`}
+                    >
+                      <ResultSelector
+                        memberId={member.id}
+                        member={member}
+                        inningNumber={inningNumber}
+                        inning={inning}
+                        allInnings={allInnings}
+                        onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
+                        onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
+                        onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
+                        onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onOpenInputScreen={onOpenInputScreen}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                       />
@@ -605,6 +713,29 @@ export default function InningByInningStats({
         </table>
       </div>
 
+      {/* 代打選手追加セクション */}
+      <div className="substitute-actions">
+        <select
+          className="substitute-select"
+          value=""
+          onChange={(e) => {
+            if (e.target.value) {
+              handleAddSubstitute(e.target.value)
+              e.target.value = ''
+            }
+          }}
+        >
+          <option value="">代打選手を追加</option>
+          {getAvailableSubstitutes()
+            .filter(m => !substituteMembers.has(m.id))
+            .map(m => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+        </select>
+      </div>
+
       {members.length === 0 && (
         <p className="empty-message">メンバーを追加してください</p>
       )}
@@ -618,6 +749,7 @@ export default function InningByInningStats({
 
 interface ResultSelectorProps {
   memberId: string
+  member: Member
   inningNumber: number
   inning: InningStats | undefined
   allInnings: InningStats[]
@@ -625,11 +757,12 @@ interface ResultSelectorProps {
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
+  onOpenInputScreen?: (member: Member, inning: number) => void
   isClosed: boolean
   canAddAtBat: boolean
 }
 
-function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat }: ResultSelectorProps) {
+function ResultSelector({ member, inningNumber, inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, onOpenInputScreen, isClosed, canAddAtBat }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
@@ -643,6 +776,9 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     if (result === 'out' || result === 'walk' || result === '') {
       onSelect(result, 0, atBatIndex)
       setShowRBISelect(false)
+    } else if (result === 'out-rbi') {
+      // アウト（打点）は打点選択を表示
+      setShowRBISelect(true)
     } else if (result === 'homerun') {
       setShowRBISelect(true)
     } else if (result === 'single' || result === 'double' || result === 'triple') {
@@ -678,8 +814,14 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
   const currentResult = inning ? getResultLabelForSelector(inning) : ''
 
+  // const handleCellClick = () => {
+  //   if (onOpenInputScreen && !isClosed) {
+  //     onOpenInputScreen(member, inningNumber)
+  //   }
+  // }
+
   return (
-    <div className="result-selector">
+    <div className="result-selector">{/* onClick={handleCellClick} style={{ cursor: onOpenInputScreen && !isClosed ? 'pointer' : 'default' }} */}
       {showRBISelect ? (
         <div className="rbi-select-panel">
           <div className="rbi-label">打点数を選択</div>
@@ -717,6 +859,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                     >
                       <option value="">-</option>
                       <option value="out">O (アウト)</option>
+                      <option value="out-rbi">OR (アウト・打点)</option>
                       <option value="single">一 (単打)</option>
                       <option value="double">二 (二塁打)</option>
                       <option value="triple">三 (三塁打)</option>
@@ -749,6 +892,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
             >
               <option value="">-</option>
               <option value="out">O (アウト)</option>
+              <option value="out-rbi">OR (アウト・打点)</option>
               <option value="single">一 (単打)</option>
               <option value="double">二 (二塁打)</option>
               <option value="triple">三 (三塁打)</option>
@@ -800,6 +944,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
 function getDisplayText(result: ResultType, rbi: number): string {
   const resultMap: Record<ResultType, string> = {
     out: 'O',
+    'out-rbi': 'OR',
     single: '1H',
     double: '2H',
     triple: '3H',
@@ -815,8 +960,8 @@ function getDisplayText(result: ResultType, rbi: number): string {
   
   const resultText = resultMap[result] || '-'
   
-  // ヒット系や犠打・犠飛の場合、打点があれば表示
-  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly'].includes(result)
+  // ヒット系や犠打・犠飛、アウト(打点)の場合、打点があれば表示
+  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly', 'out-rbi'].includes(result)
   if (hasRBI && rbi > 0) {
     return `${resultText}(${rbi})`
   }
@@ -825,7 +970,8 @@ function getDisplayText(result: ResultType, rbi: number): string {
 }
 
 function getResultLabelForSelector(inning: InningStats): ResultType {
-  if (inning.walks > 0) return 'walk'
+  if (inning.walks > 0 && inning.deadBalls === 0) return 'walk'
+  if (inning.deadBalls > 0) return 'dead-ball'
   if (inning.stolenBases > 0) return 'stolen-base'
   if (inning.sacrificeBunts > 0) return 'sacrifice-bunt'
   if (inning.sacrificeFlies > 0) return 'sacrifice-fly'
@@ -834,6 +980,7 @@ function getResultLabelForSelector(inning: InningStats): ResultType {
   if (inning.triples > 0) return 'triple'
   if (inning.doubles > 0) return 'double'
   if (inning.hits > 0) return 'single'
+  if (inning.atBats > 0 && inning.rbis > 0) return 'out-rbi'
   if (inning.atBats > 0) return 'out'
   return ''
 }

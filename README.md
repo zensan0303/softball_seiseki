@@ -1,111 +1,73 @@
-# softball_seiseki
+# React + TypeScript + Vite
 
-ソフトボールチームの成績管理アプリケーション
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 機能
+Currently, two official plugins are available:
 
-- 選手管理（追加・削除・編集）
-- 試合管理（カレンダー表示、試合記録）
-- 詳細な成績記録（打席ごとの記録）
-- 月間・年間・全試合の統計表示
-- 打率、打点、OPSなどの各種ランキング
-- **Firebaseを使用したリアルタイムデータ共有**
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## セットアップ
+## React Compiler
 
-### 1. 依存パッケージのインストール
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-```bash
-cd softball-stats-app
-npm install
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-### 2. Firebase設定
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-#### 2.1 Firebaseプロジェクトの作成
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-1. [Firebase Console](https://console.firebase.google.com/) にアクセス
-2. 「プロジェクトを追加」をクリック
-3. プロジェクト名を入力（例: softball-stats-app）
-4. Google Analyticsは任意で設定
-5. プロジェクトを作成
-
-#### 2.2 Realtime Databaseの有効化
-
-1. Firebaseコンソールの左メニューから「Realtime Database」を選択
-2. 「データベースを作成」をクリック
-3. ロケーションを選択（asia-northeast1を推奨）
-4. セキュリティルールは「テストモードで開始」を選択（後で変更可能）
-5. 「有効にする」をクリック
-
-#### 2.3 Firebase設定情報の取得
-
-1. プロジェクト設定（歯車アイコン）→「プロジェクトの設定」を開く
-2. 「マイアプリ」セクションでウェブアプリを追加（</> アイコンをクリック）
-3. アプリのニックネームを入力（例: Web App）
-4. 表示されるfirebaseConfigの情報をコピー
-
-#### 2.4 環境変数の設定
-
-1. `softball-stats-app/.env.example`を`softball-stats-app/.env`にコピー
-   ```bash
-   cp softball-stats-app/.env.example softball-stats-app/.env
-   ```
-
-2. `.env`ファイルを開いて、Firebase設定情報を入力
-   ```
-   VITE_FIREBASE_API_KEY=your_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-   VITE_FIREBASE_DATABASE_URL=https://your_project_id-default-rtdb.firebaseio.com
-   VITE_FIREBASE_PROJECT_ID=your_project_id
-   VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-   VITE_FIREBASE_APP_ID=your_app_id
-   ```
-
-### 3. アプリケーションの起動
-
-```bash
-npm run dev
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-ブラウザで http://localhost:5173 にアクセス
-
-### 4. ビルド（本番環境用）
-
-```bash
-npm run build
-```
-
-ビルドされたファイルは`dist/`フォルダに出力されます。
-
-## Firebase セキュリティルールの設定（推奨）
-
-テストモードのセキュリティルールは誰でもデータを読み書きできるため、本番環境では以下のようなルールに変更することを推奨します：
-
-```json
-{
-  "rules": {
-    ".read": true,
-    ".write": true
-  }
-}
-```
-
-より厳密なセキュリティを設定する場合は、Firebase Authenticationを統合し、認証されたユーザーのみがデータを操作できるようにすることをお勧めします。
-
-## データ共有
-
-このアプリケーションはFirebase Realtime Databaseを使用しているため、同じFirebaseプロジェクトを設定したすべてのユーザー間でデータがリアルタイムに同期されます。
-
-## 技術スタック
-
-- React 19
-- TypeScript
-- Vite
-- Firebase Realtime Database
-- CSS
-
-## ライセンス
-
-MIT
