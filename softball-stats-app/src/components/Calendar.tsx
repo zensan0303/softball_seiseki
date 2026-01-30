@@ -194,33 +194,77 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     const stats = memberStatsArray
     if (stats.length === 0) return {}
 
-    // 規定打席 = 試合数 × 15打席 × 0.8
-    const requiredPlateAppearances = Math.ceil(matchCount * 15 * 0.8)
+    // 実際のデータに基づいて規定打席を計算
+    // 全選手の平均打席数を計算
+    const totalPlateAppearances = stats.reduce((sum, s) => {
+      return sum + s.atBats + s.walks + s.sacrificeFlies + s.sacrificeBunts
+    }, 0)
+    const averagePlateAppearances = stats.length > 0 ? totalPlateAppearances / stats.length : 0
+    
+    // 規定打席 = 平均打席数の70% または 試合数×2.5 のいずれか小さい方
+    const calculatedRequired = Math.ceil(averagePlateAppearances * 0.7)
+    const minRequired = Math.ceil(matchCount * 2.5)
+    const requiredPlateAppearances = Math.max(1, Math.min(calculatedRequired, minRequired))
 
-    // 規定打席到達者のみをフィルタ
+    // 規定打席到達者のみをフィルタ（打率とOPSランキング用）
     const qualifiedStats = stats.filter(s => {
       const plateAppearances = s.atBats + s.walks + s.sacrificeFlies + s.sacrificeBunts
       return plateAppearances >= requiredPlateAppearances
     })
 
+    // 5位までの値を含む全選手を取得する関数
+    const getTop5WithTies = <T,>(sorted: T[], getValue: (item: T) => number): T[] => {
+      if (sorted.length === 0) return []
+      
+      // 0の値を持つ選手を除外
+      const nonZero = sorted.filter(item => getValue(item) > 0)
+      if (nonZero.length === 0) return []
+      if (nonZero.length <= 5) return nonZero
+      
+      // 5位の値を取得
+      const fifthValue = getValue(nonZero[4])
+      
+      // 5位の値以上の選手を全て取得
+      return nonZero.filter(item => getValue(item) >= fifthValue)
+    }
+
     return {
-      battingAverage: [...qualifiedStats].sort((a, b) => {
-        const aAvg = a.atBats > 0 ? a.hits / a.atBats : 0
-        const bAvg = b.atBats > 0 ? b.hits / b.atBats : 0
-        return bAvg - aAvg
-      }).slice(0, 3),
+      battingAverage: (() => {
+        const sorted = [...qualifiedStats].sort((a, b) => {
+          const aAvg = a.atBats > 0 ? a.hits / a.atBats : 0
+          const bAvg = b.atBats > 0 ? b.hits / b.atBats : 0
+          return bAvg - aAvg
+        })
+        return getTop5WithTies(sorted, s => s.atBats > 0 ? s.hits / s.atBats : 0)
+      })(),
       
-      rbis: [...qualifiedStats].sort((a, b) => b.rbis - a.rbis).slice(0, 3),
+      rbis: (() => {
+        const sorted = [...stats].sort((a, b) => b.rbis - a.rbis)
+        return getTop5WithTies(sorted, s => s.rbis)
+      })(),
       
-      stolenBases: [...qualifiedStats].sort((a, b) => b.stolenBases - a.stolenBases).slice(0, 3),
+      stolenBases: (() => {
+        const sorted = [...stats].sort((a, b) => b.stolenBases - a.stolenBases)
+        return getTop5WithTies(sorted, s => s.stolenBases)
+      })(),
       
-      hits: [...qualifiedStats].sort((a, b) => b.hits - a.hits).slice(0, 3),
+      hits: (() => {
+        const sorted = [...stats].sort((a, b) => b.hits - a.hits)
+        return getTop5WithTies(sorted, s => s.hits)
+      })(),
       
-      ops: [...qualifiedStats].sort((a, b) => {
-        const aOps = (a.atBats > 0 ? a.hits / a.atBats : 0) + ((a.atBats + a.walks) > 0 ? (a.hits + a.walks) / (a.atBats + a.walks) : 0)
-        const bOps = (b.atBats > 0 ? b.hits / b.atBats : 0) + ((b.atBats + b.walks) > 0 ? (b.hits + b.walks) / (b.atBats + b.walks) : 0)
-        return bOps - aOps
-      }).slice(0, 3),
+      ops: (() => {
+        const sorted = [...qualifiedStats].sort((a, b) => {
+          const aOps = (a.atBats > 0 ? a.hits / a.atBats : 0) + ((a.atBats + a.walks) > 0 ? (a.hits + a.walks) / (a.atBats + a.walks) : 0)
+          const bOps = (b.atBats > 0 ? b.hits / b.atBats : 0) + ((b.atBats + b.walks) > 0 ? (b.hits + b.walks) / (b.atBats + b.walks) : 0)
+          return bOps - aOps
+        })
+        return getTop5WithTies(sorted, s => {
+          const slg = s.atBats > 0 ? (s.hits + s.doubles + s.triples * 2 + s.homeRuns * 3) / s.atBats : 0
+          const obp = (s.atBats + s.walks) > 0 ? (s.hits + s.walks) / (s.atBats + s.walks) : 0
+          return slg + obp
+        })
+      })(),
       requiredPlateAppearances,
     }
   }
@@ -280,47 +324,106 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
         <div className="rankings-section">
           <div className="ranking-box">
             <h4>打率ランキング</h4>
-            <ol>
+            <p style={{ fontSize: '0.75rem', color: '#666', margin: '0 0 8px 0', textAlign: 'center' }}>※規定打席到達者のみ</p>
+            <div style={{ paddingLeft: '20px' }}>
               {rankings.battingAverage?.map((stat, idx) => {
                 const avg = stat.atBats > 0 ? (stat.hits / stat.atBats).toFixed(3) : '.000'
-                return <li key={idx}>{stat.name} - {avg}</li>
+                const prevAvg = idx > 0 && rankings.battingAverage ? 
+                  (rankings.battingAverage[idx - 1].atBats > 0 ? (rankings.battingAverage[idx - 1].hits / rankings.battingAverage[idx - 1].atBats).toFixed(3) : '.000') : null
+                const rank = prevAvg === null || avg !== prevAvg ? idx + 1 : 
+                  (() => {
+                    // 同じ値の最初の順位を探す
+                    for (let i = idx - 1; i >= 0; i--) {
+                      const iAvg = rankings.battingAverage![i].atBats > 0 ? (rankings.battingAverage![i].hits / rankings.battingAverage![i].atBats).toFixed(3) : '.000'
+                      if (iAvg !== avg) return i + 2
+                    }
+                    return 1
+                  })()
+                const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {avg}</div>
               })}
-            </ol>
-          </div>
-          <div className="ranking-box">
-            <h4>打点ランキング</h4>
-            <ol>
-              {rankings.rbis?.map((stat, idx) => (
-                <li key={idx}>{stat.name} - {stat.rbis}点</li>
-              ))}
-            </ol>
-          </div>
-          <div className="ranking-box">
-            <h4>盗塁ランキング</h4>
-            <ol>
-              {rankings.stolenBases?.map((stat, idx) => (
-                <li key={idx}>{stat.name} - {stat.stolenBases || 0}</li>
-              ))}
-            </ol>
+            </div>
           </div>
           <div className="ranking-box">
             <h4>安打ランキング</h4>
-            <ol>
-              {rankings.hits?.map((stat, idx) => (
-                <li key={idx}>{stat.name} - {stat.hits}本</li>
-              ))}
-            </ol>
+            <div style={{ paddingLeft: '20px' }}>
+              {rankings.hits?.map((stat, idx) => {
+                const prevHits = idx > 0 && rankings.hits ? rankings.hits[idx - 1].hits : null
+                const rank = prevHits === null || stat.hits !== prevHits ? idx + 1 : 
+                  (() => {
+                    for (let i = idx - 1; i >= 0; i--) {
+                      if (rankings.hits![i].hits !== stat.hits) return i + 2
+                    }
+                    return 1
+                  })()
+                const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.hits}本</div>
+              })}
+            </div>
+          </div>
+          <div className="ranking-box">
+            <h4>打点ランキング</h4>
+            <div style={{ paddingLeft: '20px' }}>
+              {rankings.rbis?.map((stat, idx) => {
+                const prevRbis = idx > 0 && rankings.rbis ? rankings.rbis[idx - 1].rbis : null
+                const rank = prevRbis === null || stat.rbis !== prevRbis ? idx + 1 : 
+                  (() => {
+                    for (let i = idx - 1; i >= 0; i--) {
+                      if (rankings.rbis![i].rbis !== stat.rbis) return i + 2
+                    }
+                    return 1
+                  })()
+                const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.rbis}点</div>
+              })}
+            </div>
           </div>
           <div className="ranking-box">
             <h4>OPSランキング</h4>
-            <ol>
+            <p style={{ fontSize: '0.75rem', color: '#666', margin: '0 0 8px 0', textAlign: 'center' }}>※規定打席到達者のみ</p>
+            <div style={{ paddingLeft: '20px' }}>
               {rankings.ops?.map((stat, idx) => {
                 const slg = stat.atBats > 0 ? (stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats : 0
                 const obp = (stat.atBats + stat.walks) > 0 ? (stat.hits + stat.walks) / (stat.atBats + stat.walks) : 0
-                const ops = slg + obp
-                return <li key={idx}>{stat.name} - {ops.toFixed(3)}</li>
+                const ops = (slg + obp).toFixed(3)
+                const prevOps = idx > 0 && rankings.ops ? (() => {
+                  const prevStat = rankings.ops[idx - 1]
+                  const prevSlg = prevStat.atBats > 0 ? (prevStat.hits + prevStat.doubles + prevStat.triples * 2 + prevStat.homeRuns * 3) / prevStat.atBats : 0
+                  const prevObp = (prevStat.atBats + prevStat.walks) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks) : 0
+                  return (prevSlg + prevObp).toFixed(3)
+                })() : null
+                const rank = prevOps === null || ops !== prevOps ? idx + 1 : 
+                  (() => {
+                    for (let i = idx - 1; i >= 0; i--) {
+                      const prevStat = rankings.ops![i]
+                      const prevSlg = prevStat.atBats > 0 ? (prevStat.hits + prevStat.doubles + prevStat.triples * 2 + prevStat.homeRuns * 3) / prevStat.atBats : 0
+                      const prevObp = (prevStat.atBats + prevStat.walks) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks) : 0
+                      if ((prevSlg + prevObp).toFixed(3) !== ops) return i + 2
+                    }
+                    return 1
+                  })()
+                const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {ops}</div>
               })}
-            </ol>
+            </div>
+          </div>
+          <div className="ranking-box">
+            <h4>盗塁ランキング</h4>
+            <div style={{ paddingLeft: '20px' }}>
+              {rankings.stolenBases?.map((stat, idx) => {
+                const sb = stat.stolenBases || 0
+                const prevSb = idx > 0 && rankings.stolenBases ? (rankings.stolenBases[idx - 1].stolenBases || 0) : null
+                const rank = prevSb === null || sb !== prevSb ? idx + 1 : 
+                  (() => {
+                    for (let i = idx - 1; i >= 0; i--) {
+                      if ((rankings.stolenBases![i].stolenBases || 0) !== sb) return i + 2
+                    }
+                    return 1
+                  })()
+                const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {sb}</div>
+              })}
+            </div>
           </div>
         </div>
 
@@ -349,7 +452,6 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           <tbody>
             {memberStats.map((stat) => {
               const plateAppearances = stat.atBats + stat.walks + stat.sacrificeFlies + stat.sacrificeBunts
-              const isQualified = plateAppearances >= (rankings.requiredPlateAppearances || 0)
               const avg = stat.atBats > 0 ? (stat.hits / stat.atBats).toFixed(3) : '.000'
               const slg = stat.atBats > 0 ? ((stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats).toFixed(3) : '.000'
               const obp = (stat.atBats + stat.walks + stat.sacrificeFlies) > 0 ? ((stat.hits + stat.walks) / (stat.atBats + stat.walks + stat.sacrificeFlies)).toFixed(3) : '.000'
@@ -357,7 +459,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
               const sh = stat.sacrificeBunts || 0
               const sf = stat.sacrificeFlies || 0
               return (
-                <tr key={stat.name} className={!isQualified ? 'not-qualified' : ''}>
+                <tr key={stat.name}>
                   <td className="stat-name">{stat.name}</td>
                   <td>{stat.matches}</td>
                   <td>{plateAppearances}</td>

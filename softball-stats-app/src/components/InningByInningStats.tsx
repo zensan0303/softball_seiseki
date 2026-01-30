@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Member, PlayerStats, InningStats } from '../types'
 import '../styles/InningByInningStats.css'
 
-type ResultType = 'out' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
+type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
 
 interface InningByInningStatsProps {
   members: Member[]
@@ -321,6 +321,10 @@ export default function InningByInningStats({
     // 結果に応じて更新
     if (result === 'out') {
       updatedInning.atBats = 1
+    } else if (result === 'out-rbi') {
+      // アウト（打点）：ゴロの間などでアウトだが打点がついた場合
+      updatedInning.atBats = 1
+      updatedInning.rbis = rbi > 0 ? rbi : 1
     } else if (result === 'single') {
       updatedInning.atBats = 1
       updatedInning.hits = 1
@@ -764,6 +768,9 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     if (result === 'out' || result === 'walk' || result === '') {
       onSelect(result, 0, atBatIndex)
       setShowRBISelect(false)
+    } else if (result === 'out-rbi') {
+      // アウト（打点）は打点選択を表示
+      setShowRBISelect(true)
     } else if (result === 'homerun') {
       setShowRBISelect(true)
     } else if (result === 'single' || result === 'double' || result === 'triple') {
@@ -838,6 +845,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                     >
                       <option value="">-</option>
                       <option value="out">O (アウト)</option>
+                      <option value="out-rbi">OR (アウト・打点)</option>
                       <option value="single">一 (単打)</option>
                       <option value="double">二 (二塁打)</option>
                       <option value="triple">三 (三塁打)</option>
@@ -870,6 +878,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
             >
               <option value="">-</option>
               <option value="out">O (アウト)</option>
+              <option value="out-rbi">OR (アウト・打点)</option>
               <option value="single">一 (単打)</option>
               <option value="double">二 (二塁打)</option>
               <option value="triple">三 (三塁打)</option>
