@@ -79,11 +79,13 @@ export default function MatchDetail({
     return match.members.find(m => m.id === playerId)?.name || '不明'
   }
 
-  const playerOverallStats = Array.from(match.stats.entries()).map(([playerId, stats]) => ({
-    playerId,
-    name: getPlayerName(playerId),
-    ...calculatePlayerStats(stats),
-  }))
+  const playerOverallStats = Array.from(match.stats.entries())
+    .filter(([_, stats]) => stats && stats.innings) // statsとinningsが存在する場合のみ
+    .map(([playerId, stats]) => ({
+      playerId,
+      name: getPlayerName(playerId),
+      ...calculatePlayerStats(stats),
+    }))
 
   const handleOpenInputScreen = (member: Member, inning: number) => {
     setInputMode({ active: true, member, inning })
