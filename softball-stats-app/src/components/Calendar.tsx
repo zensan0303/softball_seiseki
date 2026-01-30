@@ -19,6 +19,13 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 27))
   const [viewMode, setViewMode] = useState<'calendar' | 'monthly' | 'yearly' | 'all'>('calendar')
 
+  // 年度を計算（4月始まり）
+  const getFiscalYear = (date: Date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1 // 1-12
+    return month >= 4 ? year : year - 1
+  }
+
   // Firebaseからマッチを読み込み
   useEffect(() => {
     const loadMatches = async () => {
@@ -114,9 +121,11 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
                mDate.getMonth() === currentDate.getMonth()
       })
     } else {
+      // 年度別（4月～翌年3月）
+      const fiscalYear = getFiscalYear(currentDate)
       return matches.filter(m => {
         const mDate = new Date(m.date)
-        return mDate.getFullYear() === currentDate.getFullYear()
+        return getFiscalYear(mDate) === fiscalYear
       })
     }
   }
@@ -181,28 +190,38 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     return Object.values(memberStats).sort((a, b) => b.matches - a.matches)
   }
 
-  const getRankings = (memberStatsArray: ReturnType<typeof getMemberStatsForMatches>) => {
+  const getRankings = (memberStatsArray: ReturnType<typeof getMemberStatsForMatches>, matchCount: number) => {
     const stats = memberStatsArray
     if (stats.length === 0) return {}
 
+    // 規定打席 = 試合数 × 15打席 × 0.8
+    const requiredPlateAppearances = Math.ceil(matchCount * 15 * 0.8)
+
+    // 規定打席到達者のみをフィルタ
+    const qualifiedStats = stats.filter(s => {
+      const plateAppearances = s.atBats + s.walks + s.sacrificeFlies + s.sacrificeBunts
+      return plateAppearances >= requiredPlateAppearances
+    })
+
     return {
-      battingAverage: [...stats].sort((a, b) => {
+      battingAverage: [...qualifiedStats].sort((a, b) => {
         const aAvg = a.atBats > 0 ? a.hits / a.atBats : 0
         const bAvg = b.atBats > 0 ? b.hits / b.atBats : 0
         return bAvg - aAvg
       }).slice(0, 3),
       
-      rbis: [...stats].sort((a, b) => b.rbis - a.rbis).slice(0, 3),
+      rbis: [...qualifiedStats].sort((a, b) => b.rbis - a.rbis).slice(0, 3),
       
-      stolenBases: [...stats].sort((a, b) => b.stolenBases - a.stolenBases).slice(0, 3),
+      stolenBases: [...qualifiedStats].sort((a, b) => b.stolenBases - a.stolenBases).slice(0, 3),
       
-      hits: [...stats].sort((a, b) => b.hits - a.hits).slice(0, 3),
+      hits: [...qualifiedStats].sort((a, b) => b.hits - a.hits).slice(0, 3),
       
-      ops: [...stats].sort((a, b) => {
+      ops: [...qualifiedStats].sort((a, b) => {
         const aOps = (a.atBats > 0 ? a.hits / a.atBats : 0) + ((a.atBats + a.walks) > 0 ? (a.hits + a.walks) / (a.atBats + a.walks) : 0)
         const bOps = (b.atBats > 0 ? b.hits / b.atBats : 0) + ((b.atBats + b.walks) > 0 ? (b.hits + b.walks) / (b.atBats + b.walks) : 0)
         return bOps - aOps
       }).slice(0, 3),
+      requiredPlateAppearances,
     }
   }
 
@@ -239,19 +258,22 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const renderStatsView = (type: 'monthly' | 'yearly' | 'all') => {
     const matchList = type === 'all' ? matches : getMatchesForPeriod(type)
     const memberStats = getMemberStatsForMatches(matchList)
-    const rankings = getRankings(memberStats)
+    const rankings = getRankings(memberStats, matchList.length)
     
     if (matchList.length === 0) {
       return <div className="empty-stats">この期間に試合がありません</div>
     }
 
+    const fiscalYear = getFiscalYear(currentDate)
+
     return (
       <div className="stats-view">
         <div className="stats-header">
           {type === 'monthly' && <h3>{currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月</h3>}
-          {type === 'yearly' && <h3>{currentDate.getFullYear()}年</h3>}
+          {type === 'yearly' && <h3>{fiscalYear}年度</h3>}
           {type === 'all' && <h3>全試合</h3>}
           <p>試合数: {matchList.length}</p>
+          <p>規定打席: {rankings.requiredPlateAppearances}打席</p>
         </div>
 
         {/* ランキング表示 */}
@@ -307,6 +329,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             <tr>
               <th>選手</th>
               <th>試</th>
+              <th>打席</th>
               <th>打</th>
               <th>安</th>
               <th>二</th>
@@ -325,6 +348,8 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           </thead>
           <tbody>
             {memberStats.map((stat) => {
+              const plateAppearances = stat.atBats + stat.walks + stat.sacrificeFlies + stat.sacrificeBunts
+              const isQualified = plateAppearances >= (rankings.requiredPlateAppearances || 0)
               const avg = stat.atBats > 0 ? (stat.hits / stat.atBats).toFixed(3) : '.000'
               const slg = stat.atBats > 0 ? ((stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats).toFixed(3) : '.000'
               const obp = (stat.atBats + stat.walks + stat.sacrificeFlies) > 0 ? ((stat.hits + stat.walks) / (stat.atBats + stat.walks + stat.sacrificeFlies)).toFixed(3) : '.000'
@@ -332,9 +357,10 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
               const sh = stat.sacrificeBunts || 0
               const sf = stat.sacrificeFlies || 0
               return (
-                <tr key={stat.name}>
+                <tr key={stat.name} className={!isQualified ? 'not-qualified' : ''}>
                   <td className="stat-name">{stat.name}</td>
                   <td>{stat.matches}</td>
+                  <td>{plateAppearances}</td>
                   <td>{stat.atBats}</td>
                   <td>{stat.hits}</td>
                   <td>{stat.doubles}</td>
@@ -379,7 +405,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             className={`tab-btn ${viewMode === 'yearly' ? 'active' : ''}`}
             onClick={() => setViewMode('yearly')}
           >
-            年間
+            年度
           </button>
           <button 
             className={`tab-btn ${viewMode === 'all' ? 'active' : ''}`}
@@ -426,8 +452,8 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           )}
           {viewMode === 'yearly' && (
             <div className="stats-nav">
-              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, 0))}>前年</button>
-              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, 0))}>翌年</button>
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, 0))}>前年度</button>
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, 0))}>翌年度</button>
             </div>
           )}
           {renderStatsView(viewMode)}

@@ -459,3 +459,17 @@
   color: #666666;
   font-size: 1.1rem;
 }
+
+/* 規定打席未到達の選手をグレーアウト */
+.stats-table-all tbody tr.not-qualified {
+  opacity: 0.5;
+  background-color: #f9f9f9;
+}
+
+.stats-table-all tbody tr.not-qualified:hover {
+  background-color: #f0f0f0;
+}
+
+.stats-table-all tbody tr.not-qualified td {
+  color: #999999;
+}
