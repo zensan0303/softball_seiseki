@@ -282,18 +282,23 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      const matchOnDay = matches.find(m => m.date === dateStr)
+      const matchesOnDay = matches.filter(m => m.date === dateStr)
 
       days.push(
         <div 
           key={day} 
           className="calendar-day"
-          onClick={() => matchOnDay && setSelectedMatch(matchOnDay)}
         >
           <div className="day-number">{day}</div>
-          {matchOnDay && (
-            <div className="match-badge">{matchOnDay.opponent}</div>
-          )}
+          {matchesOnDay.map(match => (
+            <div 
+              key={match.id}
+              className="match-badge"
+              onClick={() => setSelectedMatch(match)}
+            >
+              {match.opponent}
+            </div>
+          ))}
         </div>
       )
     }
