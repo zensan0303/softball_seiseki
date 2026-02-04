@@ -1,4 +1,4 @@
-import { database } from './firebase'
+import { database, isFirebaseAvailable, isProduction } from './firebase'
 import {
   ref,
   set,
@@ -13,10 +13,21 @@ import type { Member, Match, PlayerStats } from '../types'
 const MEMBERS_PATH = 'members'
 const MATCHES_PATH = 'matches'
 
+// Firebaseが利用できない場合の処理
+const notAvailable = () => {
+  if (isProduction) {
+    console.error('[Firebase] 本番環境でFirebaseが利用できません')
+    throw new Error('データベースに接続できません')
+  }
+  // 開発環境ではIndexedDBで動作
+  return Promise.resolve()
+}
+
 // --- メンバー関連の操作 ---
 
 // すべてのメンバーを取得
 export async function getAllMembers(): Promise<Member[]> {
+  if (!isFirebaseAvailable || !database) return []
   const membersRef = ref(database, MEMBERS_PATH)
   const snapshot = await get(membersRef)
   if (snapshot.exists()) {
@@ -28,12 +39,14 @@ export async function getAllMembers(): Promise<Member[]> {
 
 // メンバーを保存（新規または更新）
 export async function saveMember(member: Member): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   const memberRef = ref(database, `${MEMBERS_PATH}/${member.id}`)
   await set(memberRef, member)
 }
 
 // 複数のメンバーを一度に保存
 export async function saveAllMembers(members: Member[]): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   const membersRef = ref(database, MEMBERS_PATH)
   const membersObject = members.reduce((acc, member) => {
     acc[member.id] = member
@@ -44,6 +57,7 @@ export async function saveAllMembers(members: Member[]): Promise<void> {
 
 // メンバーを削除
 export async function deleteMember(memberId: string): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   const memberRef = ref(database, `${MEMBERS_PATH}/${memberId}`)
   await remove(memberRef)
 }
@@ -52,6 +66,13 @@ export async function deleteMember(memberId: string): Promise<void> {
 export function watchMembers(
   callback: (members: Member[]) => void
 ): () => void {
+  if (!isFirebaseAvailable || !database) {
+    if (isProduction) {
+      console.error('[Firebase] 本番環境でFirebaseが利用できません')
+    }
+    // 開発環境ではIndexedDBのみで動作（リアルタイム監視なし）
+    return () => {} // 何もしない関数を返す
+  }
   const membersRef = ref(database, MEMBERS_PATH)
   const unsubscribe = onValue(membersRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -95,6 +116,7 @@ function deserializeMatch(data: any): Match {
 
 // すべての試合を取得
 export async function getAllMatches(): Promise<Match[]> {
+  if (!isFirebaseAvailable || !database) return []
   const matchesRef = ref(database, MATCHES_PATH)
   const snapshot = await get(matchesRef)
   if (snapshot.exists()) {
@@ -106,6 +128,7 @@ export async function getAllMatches(): Promise<Match[]> {
 
 // 試合を保存（新規または更新）
 export async function saveMatch(match: Match): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   const matchRef = ref(database, `${MATCHES_PATH}/${match.id}`)
   const serializedMatch = serializeMatch(match)
   await set(matchRef, serializedMatch)
@@ -113,12 +136,20 @@ export async function saveMatch(match: Match): Promise<void> {
 
 // 試合を削除
 export async function deleteMatch(matchId: string): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   const matchRef = ref(database, `${MATCHES_PATH}/${matchId}`)
   await remove(matchRef)
 }
 
 // 試合の変更をリアルタイムで監視
 export function watchMatches(callback: (matches: Match[]) => void): () => void {
+  if (!isFirebaseAvailable || !database) {
+    if (isProduction) {
+      console.error('[Firebase] 本番環境でFirebaseが利用できません')
+    }
+    // 開発環境ではIndexedDBのみで動作（リアルタイム監視なし）
+    return () => {} // 何もしない関数を返す
+  }
   const matchesRef = ref(database, MATCHES_PATH)
   const unsubscribe = onValue(matchesRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -136,6 +167,7 @@ export function watchMatches(callback: (matches: Match[]) => void): () => void {
 
 // すべてのデータをクリア（リセット用）
 export async function clearAllData(): Promise<void> {
+  if (!isFirebaseAvailable || !database) return notAvailable()
   await Promise.all([
     remove(ref(database, MEMBERS_PATH)),
     remove(ref(database, MATCHES_PATH)),

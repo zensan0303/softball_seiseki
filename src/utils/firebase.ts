@@ -1,5 +1,8 @@
-import { initializeApp } from 'firebase/app'
-import { getDatabase } from 'firebase/database'
+import { initializeApp, FirebaseApp } from 'firebase/app'
+import { getDatabase, Database } from 'firebase/database'
+
+// 開発環境かどうかを判定
+const isDevelopment = import.meta.env.MODE === 'development'
 
 // Firebase設定
 // .envファイルまたは環境変数から読み込む
@@ -13,10 +16,44 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
+// Firebase設定が完全かチェック
+const isFirebaseConfigured = () => {
+  return !!(
+    firebaseConfig.apiKey &&
+    firebaseConfig.projectId &&
+    firebaseConfig.databaseURL
+  )
+}
+
 // Firebaseアプリを初期化
-const app = initializeApp(firebaseConfig)
+let app: FirebaseApp | null = null
+let database: Database | null = null
 
-// Realtime Databaseのインスタンスを取得
-export const database = getDatabase(app)
+try {
+  if (isFirebaseConfigured()) {
+    app = initializeApp(firebaseConfig)
+    database = getDatabase(app)
+    console.log('[Firebase] 初期化成功')
+  } else {
+    // 開発環境ではIndexedDBのみで動作（警告のみ）
+    if (isDevelopment) {
+      console.warn('[Firebase] 環境変数が設定されていません。IndexedDBモードで動作します。')
+    } else {
+      // 本番環境ではFirebaseが必須
+      throw new Error(
+        'Firebase環境変数が設定されていません。本番環境ではFirebaseの設定が必須です。'
+      )
+    }
+  }
+} catch (error) {
+  console.error('[Firebase] 初期化エラー:', error)
+  // 本番環境ではエラーを再スロー
+  if (!isDevelopment) {
+    throw error
+  }
+}
 
+export { database }
+export const isFirebaseAvailable = !!database
+export const isProduction = !isDevelopment
 export default app
