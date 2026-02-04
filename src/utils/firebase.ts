@@ -1,5 +1,7 @@
-import { initializeApp, FirebaseApp } from 'firebase/app'
-import { getDatabase, Database } from 'firebase/database'
+import { initializeApp } from 'firebase/app'
+import type { FirebaseApp } from 'firebase/app'
+import { getDatabase } from 'firebase/database'
+import type { Database } from 'firebase/database'
 
 // 開発環境かどうかを判定
 const isDevelopment = import.meta.env.MODE === 'development'
