@@ -13,6 +13,34 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
+// Firebase設定の検証
+function validateFirebaseConfig() {
+  const requiredFields = {
+    apiKey: firebaseConfig.apiKey,
+    projectId: firebaseConfig.projectId,
+    databaseURL: firebaseConfig.databaseURL,
+  }
+
+  const missingFields = Object.entries(requiredFields)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key)
+
+  if (missingFields.length > 0) {
+    const message = `Firebase設定エラー: 以下の環境変数が設定されていません: ${missingFields.join(', ')}\n\n` +
+      `.envファイルを作成し、以下の変数を設定してください:\n` +
+      `VITE_FIREBASE_API_KEY\n` +
+      `VITE_FIREBASE_PROJECT_ID\n` +
+      `VITE_FIREBASE_DATABASE_URL\n\n` +
+      `詳細は.env.exampleを参照してください。`
+    
+    console.error(message)
+    throw new Error(message)
+  }
+}
+
+// 設定を検証
+validateFirebaseConfig()
+
 // Firebaseアプリを初期化
 const app = initializeApp(firebaseConfig)
 
