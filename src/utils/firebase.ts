@@ -3,8 +3,8 @@ import type { FirebaseApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 import type { Database } from 'firebase/database'
 
-// 開発環境かどうかを判定
-const isDevelopment = import.meta.env.MODE === 'development'
+// 開発環境かどうかを判定（Viteの組み込み変数を使用）
+const isDevelopment = import.meta.env.DEV
 
 // Firebase設定
 // .envファイルまたは環境変数から読み込む
