@@ -32,6 +32,20 @@ export default function MatchDetail({
   const [tab, setTab] = useState<'members' | 'stats' | 'results'>('members')
   const [inputMode, setInputMode] = useState<{ active: boolean; member?: Member; inning?: number }>({ active: false })
 
+  // グローバルメンバーの名前変更を試合メンバーに反映
+  const getUpdatedMembers = (): Member[] => {
+    return match.members.map(matchMember => {
+      const globalMember = globalMembers.find(gm => gm.id === matchMember.id)
+      if (globalMember && globalMember.name !== matchMember.name) {
+        // 名前のみ更新、打順は試合データを維持
+        return { ...matchMember, name: globalMember.name }
+      }
+      return matchMember
+    })
+  }
+
+  const updatedMembers = getUpdatedMembers()
+
   const handleDeleteMatch = () => {
     if (confirm(`「${match.date} vs ${match.opponent}」を削除してもよろしいですか？`)) {
       onDeleteMatch?.(match.id)
@@ -50,7 +64,7 @@ export default function MatchDetail({
   const handleRemoveMember = (memberId: string) => {
     const updatedMatch: Match = {
       ...match,
-      members: match.members.filter(m => m.id !== memberId),
+      members: updatedMembers.filter(m => m.id !== memberId),
     }
     // 成績も削除
     updatedMatch.stats.delete(memberId)
@@ -60,7 +74,7 @@ export default function MatchDetail({
   const handleUpdateMember = (member: Member) => {
     const updatedMatch: Match = {
       ...match,
-      members: match.members.map(m => m.id === member.id ? member : m),
+      members: updatedMembers.map(m => m.id === member.id ? member : m),
     }
     onUpdate(updatedMatch)
   }
@@ -76,7 +90,7 @@ export default function MatchDetail({
   }
 
   const getPlayerName = (playerId: string): string => {
-    return match.members.find(m => m.id === playerId)?.name || '不明'
+    return updatedMembers.find(m => m.id === playerId)?.name || '不明'
   }
 
   const playerOverallStats = Array.from(match.stats.entries())
@@ -228,7 +242,7 @@ export default function MatchDetail({
         <div className="match-detail-content-body">
           {tab === 'members' && (
             <MemberList
-              members={match.members}
+              members={updatedMembers}
               globalMembers={globalMembers}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
@@ -241,7 +255,7 @@ export default function MatchDetail({
 
           {tab === 'stats' && (
             <InningByInningStats
-              members={match.members}
+              members={updatedMembers}
               stats={match.stats}
               onUpdateStats={handleUpdateStats}
             />
