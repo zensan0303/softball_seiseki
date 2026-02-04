@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app'
-import { getDatabase } from 'firebase/database'
+import { initializeApp, type FirebaseApp } from 'firebase/app'
+import { getDatabase, type Database } from 'firebase/database'
 
 // Firebase設定
 // .envファイルまたは環境変数から読み込む
@@ -13,8 +13,8 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-// Firebase設定の検証
-function validateFirebaseConfig() {
+// Firebase設定が有効かチェック
+function isFirebaseConfigValid(): boolean {
   const requiredFields = {
     apiKey: firebaseConfig.apiKey,
     projectId: firebaseConfig.projectId,
@@ -25,26 +25,33 @@ function validateFirebaseConfig() {
     .filter(([_, value]) => !value)
     .map(([key]) => key)
 
-  if (missingFields.length > 0) {
-    const message = `Firebase設定エラー: 以下の環境変数が設定されていません: ${missingFields.join(', ')}\n\n` +
-      `.envファイルを作成し、以下の変数を設定してください:\n` +
-      `VITE_FIREBASE_API_KEY\n` +
-      `VITE_FIREBASE_PROJECT_ID\n` +
-      `VITE_FIREBASE_DATABASE_URL\n\n` +
-      `詳細は.env.exampleを参照してください。`
-    
-    console.error(message)
-    throw new Error(message)
-  }
+  return missingFields.length === 0
 }
 
-// 設定を検証
-validateFirebaseConfig()
+// Firebase設定が有効な場合のみ初期化
+let app: FirebaseApp | null = null
+let database: Database | null = null
 
-// Firebaseアプリを初期化
-const app = initializeApp(firebaseConfig)
+if (isFirebaseConfigValid()) {
+  try {
+    app = initializeApp(firebaseConfig)
+    database = getDatabase(app)
+    console.info('Firebase初期化成功: Realtime Databaseを使用します')
+  } catch (error) {
+    console.error('Firebase初期化エラー:', error)
+  }
+} else {
+  console.warn(
+    'Firebase設定が不完全です。IndexedDBをローカルストレージとして使用します。\n' +
+    'Firebase Realtime Databaseを使用する場合は、.envファイルを作成して以下の環境変数を設定してください：\n' +
+    '- VITE_FIREBASE_API_KEY\n' +
+    '- VITE_FIREBASE_PROJECT_ID\n' +
+    '- VITE_FIREBASE_DATABASE_URL'
+  )
+}
 
-// Realtime Databaseのインスタンスを取得
-export const database = getDatabase(app)
+// データベースインスタンスをエクスポート（nullの可能性あり）
+export { database }
+export const isFirebaseEnabled = database !== null
 
 export default app
