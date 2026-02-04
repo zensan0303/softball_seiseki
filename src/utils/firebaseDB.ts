@@ -1,4 +1,4 @@
-import { database } from './firebase'
+import { database, isFirebaseEnabled } from './firebase'
 import {
   ref,
   set,
@@ -8,6 +8,7 @@ import {
   off,
 } from 'firebase/database'
 import type { Member, Match, PlayerStats } from '../types'
+import * as IndexedDBStorage from './indexedDB'
 
 // データベースのルートパス
 const MEMBERS_PATH = 'members'
@@ -17,7 +18,11 @@ const MATCHES_PATH = 'matches'
 
 // すべてのメンバーを取得
 export async function getAllMembers(): Promise<Member[]> {
-  const membersRef = ref(database, MEMBERS_PATH)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.getAllMembers()
+  }
+  
+  const membersRef = ref(database!, MEMBERS_PATH)
   const snapshot = await get(membersRef)
   if (snapshot.exists()) {
     const data = snapshot.val()
@@ -28,13 +33,21 @@ export async function getAllMembers(): Promise<Member[]> {
 
 // メンバーを保存（新規または更新）
 export async function saveMember(member: Member): Promise<void> {
-  const memberRef = ref(database, `${MEMBERS_PATH}/${member.id}`)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.saveMember(member)
+  }
+  
+  const memberRef = ref(database!, `${MEMBERS_PATH}/${member.id}`)
   await set(memberRef, member)
 }
 
 // 複数のメンバーを一度に保存
 export async function saveAllMembers(members: Member[]): Promise<void> {
-  const membersRef = ref(database, MEMBERS_PATH)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.saveAllMembers(members)
+  }
+  
+  const membersRef = ref(database!, MEMBERS_PATH)
   const membersObject = members.reduce((acc, member) => {
     acc[member.id] = member
     return acc
@@ -44,7 +57,11 @@ export async function saveAllMembers(members: Member[]): Promise<void> {
 
 // メンバーを削除
 export async function deleteMember(memberId: string): Promise<void> {
-  const memberRef = ref(database, `${MEMBERS_PATH}/${memberId}`)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.deleteMember(memberId)
+  }
+  
+  const memberRef = ref(database!, `${MEMBERS_PATH}/${memberId}`)
   await remove(memberRef)
 }
 
@@ -52,7 +69,14 @@ export async function deleteMember(memberId: string): Promise<void> {
 export function watchMembers(
   callback: (members: Member[]) => void
 ): () => void {
-  const membersRef = ref(database, MEMBERS_PATH)
+  if (!isFirebaseEnabled) {
+    // IndexedDBはリアルタイム監視をサポートしていないため、
+    // 初回読み込みのみ実行して空の解除関数を返す
+    IndexedDBStorage.getAllMembers().then(callback).catch(console.error)
+    return () => {} // 何もしない解除関数
+  }
+  
+  const membersRef = ref(database!, MEMBERS_PATH)
   const unsubscribe = onValue(membersRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.val()
@@ -95,7 +119,11 @@ function deserializeMatch(data: any): Match {
 
 // すべての試合を取得
 export async function getAllMatches(): Promise<Match[]> {
-  const matchesRef = ref(database, MATCHES_PATH)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.getAllMatches()
+  }
+  
+  const matchesRef = ref(database!, MATCHES_PATH)
   const snapshot = await get(matchesRef)
   if (snapshot.exists()) {
     const data = snapshot.val()
@@ -106,20 +134,35 @@ export async function getAllMatches(): Promise<Match[]> {
 
 // 試合を保存（新規または更新）
 export async function saveMatch(match: Match): Promise<void> {
-  const matchRef = ref(database, `${MATCHES_PATH}/${match.id}`)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.saveMatch(match)
+  }
+  
+  const matchRef = ref(database!, `${MATCHES_PATH}/${match.id}`)
   const serializedMatch = serializeMatch(match)
   await set(matchRef, serializedMatch)
 }
 
 // 試合を削除
 export async function deleteMatch(matchId: string): Promise<void> {
-  const matchRef = ref(database, `${MATCHES_PATH}/${matchId}`)
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.deleteMatch(matchId)
+  }
+  
+  const matchRef = ref(database!, `${MATCHES_PATH}/${matchId}`)
   await remove(matchRef)
 }
 
 // 試合の変更をリアルタイムで監視
 export function watchMatches(callback: (matches: Match[]) => void): () => void {
-  const matchesRef = ref(database, MATCHES_PATH)
+  if (!isFirebaseEnabled) {
+    // IndexedDBはリアルタイム監視をサポートしていないため、
+    // 初回読み込みのみ実行して空の解除関数を返す
+    IndexedDBStorage.getAllMatches().then(callback).catch(console.error)
+    return () => {} // 何もしない解除関数
+  }
+  
+  const matchesRef = ref(database!, MATCHES_PATH)
   const unsubscribe = onValue(matchesRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.val()
@@ -136,9 +179,13 @@ export function watchMatches(callback: (matches: Match[]) => void): () => void {
 
 // すべてのデータをクリア（リセット用）
 export async function clearAllData(): Promise<void> {
+  if (!isFirebaseEnabled) {
+    return IndexedDBStorage.clearAllData()
+  }
+  
   await Promise.all([
-    remove(ref(database, MEMBERS_PATH)),
-    remove(ref(database, MATCHES_PATH)),
+    remove(ref(database!, MEMBERS_PATH)),
+    remove(ref(database!, MATCHES_PATH)),
   ])
 }
 
