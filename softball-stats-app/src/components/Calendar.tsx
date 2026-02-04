@@ -16,7 +16,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const [matches, setMatches] = useState<Match[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 27))
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'calendar' | 'monthly' | 'yearly' | 'all'>('calendar')
 
   // 年度を計算（4月始まり）
@@ -152,7 +152,10 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       match.stats.forEach((stats, playerId) => {
         if (!stats || !stats.innings) return // 無効なデータはスキップ
         
-        const memberName = match.members.find(m => m.id === playerId)?.name || '不明'
+        // グローバルメンバーから最新の名前を取得（優先）
+        const globalMember = globalMembers.find(m => m.id === playerId)
+        const memberName = globalMember?.name || match.members.find(m => m.id === playerId)?.name || '不明'
+        
         if (!memberStats[playerId]) {
           memberStats[playerId] = {
             name: memberName,
@@ -170,6 +173,9 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             sacrificeFlies: 0,
             deadBalls: 0,
           }
+        } else {
+          // 既存のエントリがある場合も名前を更新
+          memberStats[playerId].name = memberName
         }
         memberStats[playerId].matches += 1
         stats.innings.forEach(inning => {
