@@ -152,10 +152,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       match.stats.forEach((stats, playerId) => {
         if (!stats || !stats.innings) return // 無効なデータはスキップ
         
-        // グローバルメンバーから最新の名前を取得（優先）
-        const globalMember = globalMembers.find(m => m.id === playerId)
-        const memberName = globalMember?.name || match.members.find(m => m.id === playerId)?.name || '不明'
-        
+        const memberName = match.members.find(m => m.id === playerId)?.name || '不明'
         if (!memberStats[playerId]) {
           memberStats[playerId] = {
             name: memberName,
@@ -173,9 +170,6 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             sacrificeFlies: 0,
             deadBalls: 0,
           }
-        } else {
-          // 既存のエントリがある場合も名前を更新
-          memberStats[playerId].name = memberName
         }
         memberStats[playerId].matches += 1
         stats.innings.forEach(inning => {
