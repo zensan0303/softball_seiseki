@@ -16,7 +16,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const [matches, setMatches] = useState<Match[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 27))
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'calendar' | 'monthly' | 'yearly' | 'all'>('calendar')
 
   // 年度を計算（4月始まり）

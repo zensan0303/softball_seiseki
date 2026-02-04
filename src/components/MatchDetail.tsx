@@ -87,10 +87,6 @@ export default function MatchDetail({
       ...calculatePlayerStats(stats),
     }))
 
-  const handleOpenInputScreen = (member: Member, inning: number) => {
-    setInputMode({ active: true, member, inning })
-  }
-
   const handleCloseInputScreen = () => {
     setInputMode({ active: false })
   }
@@ -248,7 +244,6 @@ export default function MatchDetail({
               members={match.members}
               stats={match.stats}
               onUpdateStats={handleUpdateStats}
-              onOpenInputScreen={handleOpenInputScreen}
             />
           )}
 
