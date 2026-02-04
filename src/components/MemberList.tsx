@@ -65,20 +65,6 @@ export default function MemberList({
       }
     })
     
-    // 次に、試合のメンバーで打順未設定または1-9以外のメンバーを追加
-    safeMembers.forEach(m => {
-      const isUnassigned = !m.battingOrder || m.battingOrder === 0 || m.battingOrder < 1 || m.battingOrder > 9
-      if (isUnassigned && !assignedToOtherOrders.has(m.id)) {
-        // グローバルメンバーの情報で上書き（存在する場合）
-        const globalMember = globalMembers.find(gm => gm.id === m.id)
-        if (globalMember) {
-          allAvailableMembers.set(m.id, globalMember)
-        } else {
-          allAvailableMembers.set(m.id, m)
-        }
-      }
-    })
-    
     return Array.from(allAvailableMembers.values())
   }
 
@@ -114,11 +100,17 @@ export default function MemberList({
 
   const handleAssignMember = (battingOrder: number, memberId: string) => {
     if (!memberId) {
-      // 割り当てを解除
+      // 割り当てを解除（メンバーリストから削除）
       const member = membersByOrder.get(battingOrder)
       if (member) {
-        // 打順を0にして未設定状態にする（削除はしない）
-        onUpdateMember({ ...member, battingOrder: 0 })
+        // グローバルメンバーにある選手の場合は打順を解除
+        // グローバルメンバーにない場合は完全削除
+        if (globalMembers.some(gm => gm.id === member.id)) {
+          onUpdateMember({ ...member, battingOrder: undefined })
+        } else {
+          // この試合にのみ登録されている選手は削除
+          onRemoveMember(member.id)
+        }
       }
       return
     }
@@ -281,71 +273,34 @@ export default function MemberList({
         </div>
       )}
 
-      {/* 打順未設定のメンバー */}
-      {safeMembers.filter(m => !m.battingOrder || m.battingOrder === 0 || m.battingOrder < 1 || m.battingOrder > 9).length > 0 && (
-        <div className="unassigned-members">
-          <h4>打順未設定のメンバー</h4>
-          <div className="unassigned-list">
-            {safeMembers
-              .filter(m => !m.battingOrder || m.battingOrder === 0 || m.battingOrder < 1 || m.battingOrder > 9)
-              .map(m => (
-                <div key={m.id} className="unassigned-member">
-                  <span>{m.name}</span>
-                  <button
-                    className="btn-remove"
-                    onClick={() => {
-                      if (window.confirm(`「${m.name}」をこの試合から削除しますか？`)) {
-                        onRemoveMember(m.id)
-                      }
-                    }}
-                    title="メンバーから削除"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
       <div className="batting-order-grid">
         {Array.from({ length: 9 }, (_, i) => i + 1).map((order) => {
           const member = membersByOrder.get(order)
           const availableMembers = getAvailableMembersForOrder(order)
-          
-          // 現在選択されているメンバーが利用可能なメンバーに含まれていない場合は追加
-          const membersToShow = [...availableMembers]
-          if (member && !membersToShow.find(m => m.id === member.id)) {
-            membersToShow.push(member)
-          }
 
           return (
             <div key={order} className="batting-order-slot">
               <div className="order-number">第{order}番</div>
-              {member ? (
-                <div className="member-display">
-                  <span className="member-name-display">{member.name}</span>
-                  <button
-                    className="btn-remove-member"
-                    onClick={() => handleAssignMember(order, '')}
-                    title="割り当てを解除"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <select
-                  className="member-select"
-                  value=""
-                  onChange={(e) => handleAssignMember(order, e.target.value)}
+              <select
+                className="member-select"
+                value={member?.id || ''}
+                onChange={(e) => handleAssignMember(order, e.target.value)}
+              >
+                <option value="">-- 選手を選択 --</option>
+                {availableMembers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              {member && (
+                <button
+                  className="btn-remove-member"
+                  onClick={() => handleAssignMember(order, '')}
+                  title="割り当てを解除"
                 >
-                  <option value="">-- 選手を選択 --</option>
-                  {membersToShow.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+                  ✕
+                </button>
               )}
             </div>
           )

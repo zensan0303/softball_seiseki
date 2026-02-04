@@ -560,12 +560,7 @@ export default function InningByInningStats({
   const getMembersByBattingOrder = (): Member[] => {
     if (!members || members.length === 0) return []
     return members
-      .filter(m => {
-        if (!m) return false
-        const order = m.battingOrder
-        // 打順が未設定（undefined, null, 0）または1-9の範囲内の場合は含める
-        return order === undefined || order === null || order === 0 || (order >= 1 && order <= 9)
-      })
+      .filter(m => m && m.battingOrder && m.battingOrder >= 1 && m.battingOrder <= 9)
       .sort((a, b) => (a.battingOrder || 0) - (b.battingOrder || 0))
   }
 
