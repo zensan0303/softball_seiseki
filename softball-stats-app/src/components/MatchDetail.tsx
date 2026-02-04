@@ -76,7 +76,27 @@ export default function MatchDetail({
   }
 
   const getPlayerName = (playerId: string): string => {
+    // グローバルメンバーから最新の名前を取得（優先）
+    const globalMember = globalMembers.find(m => m.id === playerId)
+    if (globalMember) return globalMember.name
+    // グローバルに存在しない場合は試合のメンバー情報を使用
     return match.members.find(m => m.id === playerId)?.name || '不明'
+  }
+
+  // グローバルメンバーの情報で試合メンバーを更新
+  const getUpdatedMembers = (): Member[] => {
+    return match.members.map(member => {
+      const globalMember = globalMembers.find(m => m.id === member.id)
+      if (globalMember) {
+        // グローバルメンバーの名前と打順で上書き
+        return {
+          ...member,
+          name: globalMember.name,
+          battingOrder: globalMember.battingOrder,
+        }
+      }
+      return member
+    })
   }
 
   const playerOverallStats = Array.from(match.stats.entries())
@@ -228,7 +248,7 @@ export default function MatchDetail({
         <div className="match-detail-content-body">
           {tab === 'members' && (
             <MemberList
-              members={match.members}
+              members={getUpdatedMembers()}
               globalMembers={globalMembers}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
@@ -241,7 +261,7 @@ export default function MatchDetail({
 
           {tab === 'stats' && (
             <InningByInningStats
-              members={match.members}
+              members={getUpdatedMembers()}
               stats={match.stats}
               onUpdateStats={handleUpdateStats}
             />
