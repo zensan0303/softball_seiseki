@@ -10,9 +10,10 @@ interface CalendarProps {
   onAddMember: (name: string) => void
   onRemoveMember: (memberId: string) => void
   onUpdateMember: (member: Member) => boolean
+  isAdmin: boolean
 }
 
-export default function Calendar({ globalMembers, onAddMember, onRemoveMember, onUpdateMember }: CalendarProps) {
+export default function Calendar({ globalMembers, onAddMember, onRemoveMember, onUpdateMember, isAdmin }: CalendarProps) {
   const [matches, setMatches] = useState<Match[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
@@ -533,9 +534,11 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             <button onClick={nextMonth}>次月</button>
           </div>
 
-          <button className="add-match-btn" onClick={() => setIsModalOpen(true)}>
-            試合を追加
-          </button>
+          {isAdmin && (
+            <button className="add-match-btn" onClick={() => setIsModalOpen(true)}>
+              試合を追加
+            </button>
+          )}
 
           <div className="weekdays">
             <div>日</div>
@@ -583,6 +586,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onUpdateGlobalMember={handleUpdateGlobalMember}
           onClose={() => setSelectedMatch(null)}
           onDeleteMatch={handleDeleteMatch}
+          isAdmin={isAdmin}
           onUpdate={(updatedMatch) => {
             setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)

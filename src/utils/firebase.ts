@@ -2,6 +2,8 @@ import { initializeApp } from 'firebase/app'
 import type { FirebaseApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 import type { Database } from 'firebase/database'
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import type { Auth, User } from 'firebase/auth'
 
 // 開発環境かどうかを判定（Viteの組み込み変数を使用）
 const isDevelopment = import.meta.env.DEV
@@ -30,11 +32,13 @@ const isFirebaseConfigured = () => {
 // Firebaseアプリを初期化
 let app: FirebaseApp | null = null
 let database: Database | null = null
+let auth: Auth | null = null
 
 try {
   if (isFirebaseConfigured()) {
     app = initializeApp(firebaseConfig)
     database = getDatabase(app)
+    auth = getAuth(app)
     console.log('[Firebase] 初期化成功')
   } else {
     // 開発環境ではIndexedDBのみで動作（警告のみ）
@@ -55,7 +59,31 @@ try {
   }
 }
 
-export { database }
+export { database, auth }
 export const isFirebaseAvailable = !!database
 export const isProduction = !isDevelopment
 export default app
+
+// 認証関連のヘルパー関数
+export const login = async (email: string, password: string) => {
+  if (!auth) {
+    throw new Error('Firebase認証が初期化されていません')
+  }
+  return await signInWithEmailAndPassword(auth, email, password)
+}
+
+export const logout = async () => {
+  if (!auth) {
+    throw new Error('Firebase認証が初期化されていません')
+  }
+  return await signOut(auth)
+}
+
+export const onAuthChanged = (callback: (user: User | null) => void) => {
+  if (!auth) {
+    console.warn('Firebase認証が初期化されていません')
+    callback(null)
+    return () => {}
+  }
+  return onAuthStateChanged(auth, callback)
+}

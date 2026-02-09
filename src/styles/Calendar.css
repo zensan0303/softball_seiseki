@@ -7,16 +7,18 @@
   box-sizing: border-box;
   background: transparent;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .calendar-container h1 {
   text-align: center;
   font-size: 3.5rem;
   margin: 20px 0 40px 0;
-  color: #000000;
+  color: #ffffff;
   font-weight: 800;
   letter-spacing: -1px;
-  text-shadow: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .calendar-header {
@@ -25,12 +27,12 @@
   align-items: center;
   margin: 30px 0;
   gap: 20px;
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   padding: 25px 30px;
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .calendar-header h2 {
@@ -38,14 +40,14 @@
   flex: 1;
   text-align: center;
   margin: 0;
-  color: #f1f5f9;
+  color: #5b21b6;
   font-weight: 700;
   letter-spacing: -0.5px;
 }
 
 .calendar-header button {
   padding: 12px 28px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -67,7 +69,7 @@
 
 .add-match-btn {
   padding: 14px 32px;
-  background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -76,13 +78,13 @@
   font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 0.3px;
-  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .add-match-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.5);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5);
 }
 
 .add-match-btn:active {
@@ -286,25 +288,28 @@
 
 .tab-btn {
   padding: 10px 20px;
-  background: #f0f0f0;
-  color: #333333;
-  border: 2px solid #e0e0e0;
+  background: #ffffff !important;
+  color: #5b21b6 !important;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
   font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tab-btn:hover {
-  background: #e0e0e0;
-  border-color: #999999;
+  background: #ffffff;
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-  color: white;
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: #ffffff;
+  border-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
 }
 
 .stats-nav {

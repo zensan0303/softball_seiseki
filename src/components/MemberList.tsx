@@ -11,6 +11,7 @@ interface MemberListProps {
   onUpdateMember: (member: Member) => void
   onRemoveGlobalMember?: (memberId: string) => void
   onUpdateGlobalMember?: (member: Member) => void
+  isAdmin: boolean
 }
 
 export default function MemberList({
@@ -22,6 +23,7 @@ export default function MemberList({
   onUpdateMember,
   onRemoveGlobalMember,
   onUpdateGlobalMember,
+  isAdmin,
 }: MemberListProps) {
   const [newMemberName, setNewMemberName] = useState('')
   const [showNewMemberForm, setShowNewMemberForm] = useState(false)
@@ -176,19 +178,23 @@ export default function MemberList({
       </div>
 
       <div className="new-member-section">
-        <button
-          className="btn-add-new-member"
-          onClick={() => setShowNewMemberForm(!showNewMemberForm)}
-        >
-          {showNewMemberForm ? 'キャンセル' : '＋ 新規選手を追加'}
-        </button>
+        {isAdmin && (
+          <>
+            <button
+              className="btn-add-new-member"
+              onClick={() => setShowNewMemberForm(!showNewMemberForm)}
+            >
+              {showNewMemberForm ? 'キャンセル' : '＋ 新規選手を追加'}
+            </button>
 
-        <button
-          className="btn-manage-members"
-          onClick={() => setShowGlobalMembers(!showGlobalMembers)}
-        >
-          {showGlobalMembers ? '✕ 閉じる' : '⚙️ 登録済み選手を編集'}
-        </button>
+            <button
+              className="btn-manage-members"
+              onClick={() => setShowGlobalMembers(!showGlobalMembers)}
+            >
+              {showGlobalMembers ? '✕ 閉じる' : '⚙️ 登録済み選手を編集'}
+            </button>
+          </>
+        )}
 
         {showNewMemberForm && (
           <form className="new-member-form" onSubmit={handleAddNewMember}>
@@ -291,17 +297,19 @@ export default function MemberList({
               .map(m => (
                 <div key={m.id} className="unassigned-member">
                   <span>{m.name}</span>
-                  <button
-                    className="btn-remove"
-                    onClick={() => {
-                      if (window.confirm(`「${m.name}」をこの試合から削除しますか？`)) {
-                        onRemoveMember(m.id)
-                      }
-                    }}
-                    title="メンバーから削除"
-                  >
-                    🗑️
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="btn-remove"
+                      onClick={() => {
+                        if (window.confirm(`「${m.name}」をこの試合から削除しますか？`)) {
+                          onRemoveMember(m.id)
+                        }
+                      }}
+                      title="メンバーから削除"
+                    >
+                      🗑️
+                    </button>
+                  )}
                 </div>
               ))}
           </div>
@@ -325,15 +333,17 @@ export default function MemberList({
               {member ? (
                 <div className="member-display">
                   <span className="member-name-display">{member.name}</span>
-                  <button
-                    className="btn-remove-member"
-                    onClick={() => handleAssignMember(order, '')}
-                    title="割り当てを解除"
-                  >
-                    ✕
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="btn-remove-member"
+                      onClick={() => handleAssignMember(order, '')}
+                      title="割り当てを解除"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-              ) : (
+              ) : isAdmin ? (
                 <select
                   className="member-select"
                   value=""
@@ -346,6 +356,8 @@ export default function MemberList({
                     </option>
                   ))}
                 </select>
+              ) : (
+                <div className="empty-slot">未設定</div>
               )}
             </div>
           )
@@ -355,21 +367,23 @@ export default function MemberList({
       {/* ベンチメンバーセクション */}
       <div className="bench-members-section">
         <h4>⚾ ベンチメンバー</h4>
-        <select
-          className="bench-select"
-          value=""
-          onChange={(e) => {
-            handleAddBenchMember(e.target.value)
-            e.target.value = ''
-          }}
-        >
-          <option value="">ベンチメンバーを追加...</option>
-          {getAvailableBenchMembers().map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
+        {isAdmin && (
+          <select
+            className="bench-select"
+            value=""
+            onChange={(e) => {
+              handleAddBenchMember(e.target.value)
+              e.target.value = ''
+            }}
+          >
+            <option value="">ベンチメンバーを追加...</option>
+            {getAvailableBenchMembers().map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        )}
         
         <div className="bench-members-list">
           {benchMembers.map((member) => (
@@ -378,13 +392,15 @@ export default function MemberList({
                 <span className="bench-order-badge">{member.battingOrder}</span>
                 <span className="bench-member-name">{member.name}</span>
               </div>
-              <button
-                className="btn-remove-bench"
-                onClick={() => handleRemoveBenchMember(member.id)}
-                title="削除"
-              >
-                ✕
-              </button>
+              {isAdmin && (
+                <button
+                  className="btn-remove-bench"
+                  onClick={() => handleRemoveBenchMember(member.id)}
+                  title="削除"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
           {benchMembers.length === 0 && (
