@@ -8,12 +8,14 @@ interface InningByInningStatsProps {
   members: Member[]
   stats: Map<string, PlayerStats>
   onUpdateStats: (playerId: string, stats: PlayerStats) => void
+  isAdmin: boolean
 }
 
 export default function InningByInningStats({
   members,
   stats,
   onUpdateStats,
+  isAdmin,
 }: InningByInningStatsProps) {
   const [maxInnings, setMaxInnings] = useState<number>(9)
   const [memberStatsMap, setMemberStatsMap] = useState<Map<string, InningStats[]>>(new Map())
@@ -650,6 +652,7 @@ export default function InningByInningStats({
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
+                        isAdmin={isAdmin}
                       />
                     </td>
                   )
@@ -667,13 +670,15 @@ export default function InningByInningStats({
                 <td className="cell-batting-order">代</td>
                 <td className="cell-name">
                   {member.name}
-                  <button
-                    className="btn-remove-substitute"
-                    onClick={() => handleRemoveSubstitute(member.id)}
-                    title="代打選手を削除"
-                  >
-                    ×
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="btn-remove-substitute"
+                      onClick={() => handleRemoveSubstitute(member.id)}
+                      title="代打選手を削除"
+                    >
+                      ×
+                    </button>
+                  )}
                 </td>
                 {Array.from({ length: maxInnings }, (_, i) => {
                   const inningNumber = i + 1
@@ -697,6 +702,7 @@ export default function InningByInningStats({
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
+                        isAdmin={isAdmin}
                       />
                     </td>
                   )
@@ -713,27 +719,29 @@ export default function InningByInningStats({
       </div>
 
       {/* 代打選手追加セクション */}
-      <div className="substitute-actions">
-        <select
-          className="substitute-select"
-          value=""
-          onChange={(e) => {
-            if (e.target.value) {
-              handleAddSubstitute(e.target.value)
-              e.target.value = ''
-            }
-          }}
-        >
-          <option value="">代打選手を追加</option>
-          {getAvailableSubstitutes()
-            .filter(m => !substituteMembers.has(m.id))
-            .map(m => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-        </select>
-      </div>
+      {isAdmin && (
+        <div className="substitute-actions">
+          <select
+            className="substitute-select"
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                handleAddSubstitute(e.target.value)
+                e.target.value = ''
+              }
+            }}
+          >
+            <option value="">代打選手を追加</option>
+            {getAvailableSubstitutes()
+              .filter(m => !substituteMembers.has(m.id))
+              .map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      )}
 
       {members.length === 0 && (
         <p className="empty-message">メンバーを追加してください</p>
@@ -756,9 +764,10 @@ interface ResultSelectorProps {
   onUpdateStolenBases: (delta: number) => void
   isClosed: boolean
   canAddAtBat: boolean
+  isAdmin: boolean
 }
 
-function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat }: ResultSelectorProps) {
+function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat, isAdmin }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
@@ -845,7 +854,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                       value={atBatResult}
                       onChange={(e) => handleResultChange(e.target.value as ResultType, index)}
                       className="result-select result-select-multi"
-                      disabled={isClosed}
+                      disabled={isClosed || !isAdmin}
                     >
                       <option value="">-</option>
                       <option value="out">O (アウト)</option>
@@ -860,7 +869,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                       <option value="error">E (相手エラー)</option>
                       <option value="dead-ball">DB (デッドボール)</option>
                     </select>
-                    {allInnings.length > 1 && (
+                    {isAdmin && allInnings.length > 1 && (
                       <button
                         className="btn-remove-atbat"
                         onClick={() => onRemoveAtBat(index)}
@@ -878,7 +887,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
               value={currentResult}
               onChange={(e) => handleResultChange(e.target.value as ResultType, 0)}
               className="result-select"
-              disabled={isClosed}
+              disabled={isClosed || !isAdmin}
             >
               <option value="">-</option>
               <option value="out">O (アウト)</option>
@@ -895,7 +904,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
             </select>
           )}
           <div className="result-actions">
-            {!isClosed && canAddAtBat && (
+            {isAdmin && !isClosed && canAddAtBat && (
               <button
                 className="btn-add-atbat"
                 onClick={onAddAtBat}
@@ -904,26 +913,28 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                 +
               </button>
             )}
-            <div className="stolen-base-controls">
-              <button
-                className="btn-stolen-base"
-                onClick={handleAddStolenBase}
-                disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
-                title="盗塁を追加（最大3）"
-              >
-                🏃 {currentAtBat?.stolenBases || 0}
-              </button>
-              {currentAtBat && currentAtBat.stolenBases > 0 && (
+            {isAdmin && (
+              <div className="stolen-base-controls">
                 <button
-                  className="btn-stolen-base-remove"
-                  onClick={handleRemoveStolenBase}
-                  disabled={isClosed}
-                  title="盗塁を削除"
+                  className="btn-stolen-base"
+                  onClick={handleAddStolenBase}
+                  disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
+                  title="盗塁を追加（最大3）"
                 >
-                  −
+                  🏃 {currentAtBat?.stolenBases || 0}
                 </button>
-              )}
-            </div>
+                {currentAtBat && currentAtBat.stolenBases > 0 && (
+                  <button
+                    className="btn-stolen-base-remove"
+                    onClick={handleRemoveStolenBase}
+                    disabled={isClosed}
+                    title="盗塁を削除"
+                  >
+                    −
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}

@@ -17,6 +17,7 @@ interface MatchDetailProps {
   onClose: () => void
   onUpdate: (match: Match) => void
   onDeleteMatch?: (matchId: string) => void
+  isAdmin: boolean
 }
 
 export default function MatchDetail({
@@ -28,6 +29,7 @@ export default function MatchDetail({
   onClose,
   onUpdate,
   onDeleteMatch,
+  isAdmin,
 }: MatchDetailProps) {
   const [tab, setTab] = useState<'members' | 'stats' | 'results'>('members')
   const [inputMode, setInputMode] = useState<{ active: boolean; member?: Member; inning?: number }>({ active: false })
@@ -213,7 +215,7 @@ export default function MatchDetail({
         <div className="match-header">
           <h2>{match.date} vs {match.opponent}</h2>
           <div className="header-buttons">
-            <button className="btn-delete-match" onClick={handleDeleteMatch} title="この試合を削除">🗑️</button>
+            {isAdmin && <button className="btn-delete-match" onClick={handleDeleteMatch} title="この試合を削除">🗑️</button>}
             <button className="btn-close" onClick={onClose}>✕</button>
           </div>
         </div>
@@ -250,6 +252,7 @@ export default function MatchDetail({
               onUpdateMember={handleUpdateMember}
               onRemoveGlobalMember={onRemoveGlobalMember}
               onUpdateGlobalMember={onUpdateGlobalMember}
+              isAdmin={isAdmin}
             />
           )}
 
@@ -258,6 +261,7 @@ export default function MatchDetail({
               members={updatedMembers}
               stats={match.stats}
               onUpdateStats={handleUpdateStats}
+              isAdmin={isAdmin}
             />
           )}
 
