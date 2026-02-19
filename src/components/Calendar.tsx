@@ -107,10 +107,10 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const handleDeleteMatch = async (matchId: string) => {
     try {
       await deleteMatch(matchId)
-      setMatches(matches.filter(m => m.id !== matchId))
-    } catch (error) {
-      console.error('Failed to delete match:', error)
-      alert('試合の削除に失敗しました')
+      setMatches(prev => prev.filter(m => m.id !== matchId))
+    } catch (error: any) {
+      console.error('[Delete] 試合削除エラー:', error?.code, error?.message)
+      alert(`試合の削除に失敗しました\nエラー: ${error?.code ?? error?.message ?? '不明'}`)
     }
   }
 

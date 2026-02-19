@@ -1,17 +1,18 @@
-import { database, isFirebaseAvailable, isProduction } from './firebase'
+import { db, isFirebaseAvailable, isProduction } from './firebase'
 import {
-  ref,
-  set,
-  get,
-  remove,
-  onValue,
-  off,
-} from 'firebase/database'
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  deleteDoc,
+  onSnapshot,
+  writeBatch,
+} from 'firebase/firestore'
 import type { Member, Match, PlayerStats } from '../types'
 
-// データベースのルートパス
-const MEMBERS_PATH = 'members'
-const MATCHES_PATH = 'matches'
+// Firestoreコレクション名
+const MEMBERS_COLLECTION = 'members'
+const MATCHES_COLLECTION = 'matches'
 
 // Firebaseが利用できない場合の処理
 const notAvailable = () => {
@@ -27,67 +28,53 @@ const notAvailable = () => {
 
 // すべてのメンバーを取得
 export async function getAllMembers(): Promise<Member[]> {
-  if (!isFirebaseAvailable || !database) return []
-  const membersRef = ref(database, MEMBERS_PATH)
-  const snapshot = await get(membersRef)
-  if (snapshot.exists()) {
-    const data = snapshot.val()
-    return Object.values(data)
-  }
-  return []
+  if (!isFirebaseAvailable || !db) return []
+  const snapshot = await getDocs(collection(db, MEMBERS_COLLECTION))
+  return snapshot.docs.map(d => d.data() as Member)
 }
 
 // メンバーを保存（新規または更新）
 export async function saveMember(member: Member): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  const memberRef = ref(database, `${MEMBERS_PATH}/${member.id}`)
-  await set(memberRef, member)
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  await setDoc(doc(db, MEMBERS_COLLECTION, member.id), member)
 }
 
-// 複数のメンバーを一度に保存
+// 複数のメンバーを一度に保存（バッチ書き込みで効率化）
 export async function saveAllMembers(members: Member[]): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  const membersRef = ref(database, MEMBERS_PATH)
-  const membersObject = members.reduce((acc, member) => {
-    acc[member.id] = member
-    return acc
-  }, {} as Record<string, Member>)
-  await set(membersRef, membersObject)
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  const batch = writeBatch(db)
+  members.forEach(member => {
+    batch.set(doc(db!, MEMBERS_COLLECTION, member.id), member)
+  })
+  await batch.commit()
 }
 
 // メンバーを削除
 export async function deleteMember(memberId: string): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  const memberRef = ref(database, `${MEMBERS_PATH}/${memberId}`)
-  await remove(memberRef)
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  await deleteDoc(doc(db, MEMBERS_COLLECTION, memberId))
 }
 
 // メンバーの変更をリアルタイムで監視
 export function watchMembers(
   callback: (members: Member[]) => void
 ): () => void {
-  if (!isFirebaseAvailable || !database) {
+  if (!isFirebaseAvailable || !db) {
     if (isProduction) {
       console.error('[Firebase] 本番環境でFirebaseが利用できません')
     }
-    // 開発環境ではIndexedDBのみで動作（リアルタイム監視なし）
-    return () => {} // 何もしない関数を返す
+    return () => {}
   }
-  const membersRef = ref(database, MEMBERS_PATH)
-  const unsubscribe = onValue(membersRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.val()
-      callback(Object.values(data))
-    } else {
-      callback([])
-    }
-  })
-  return () => off(membersRef, 'value', unsubscribe)
+  return onSnapshot(
+    collection(db, MEMBERS_COLLECTION),
+    snapshot => { callback(snapshot.docs.map(d => d.data() as Member)) },
+    error => { console.error('[Firestore] watchMembers error:', error.code) }
+  )
 }
 
 // --- 試合関連の操作 ---
 
-// MapをJSON形式に変換（Firebase保存用）
+// MapをJSON形式に変換（Firestore保存用）
 function serializeMatch(match: Match): any {
   const statsObject: Record<string, PlayerStats> = {}
   match.stats.forEach((value, key) => {
@@ -99,7 +86,7 @@ function serializeMatch(match: Match): any {
   }
 }
 
-// JSON形式からMapに変換（Firebase取得用）
+// JSON形式からMapに変換（Firestore取得用）
 function deserializeMatch(data: any): Match {
   const stats = new Map<string, PlayerStats>()
   if (data.stats) {
@@ -116,65 +103,49 @@ function deserializeMatch(data: any): Match {
 
 // すべての試合を取得
 export async function getAllMatches(): Promise<Match[]> {
-  if (!isFirebaseAvailable || !database) return []
-  const matchesRef = ref(database, MATCHES_PATH)
-  const snapshot = await get(matchesRef)
-  if (snapshot.exists()) {
-    const data = snapshot.val()
-    return Object.values(data).map((match: any) => deserializeMatch(match))
-  }
-  return []
+  if (!isFirebaseAvailable || !db) return []
+  const snapshot = await getDocs(collection(db, MATCHES_COLLECTION))
+  return snapshot.docs.map(d => deserializeMatch(d.data()))
 }
 
 // 試合を保存（新規または更新）
 export async function saveMatch(match: Match): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  const matchRef = ref(database, `${MATCHES_PATH}/${match.id}`)
-  const serializedMatch = serializeMatch(match)
-  await set(matchRef, serializedMatch)
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  await setDoc(doc(db, MATCHES_COLLECTION, match.id), serializeMatch(match))
 }
 
 // 試合を削除
 export async function deleteMatch(matchId: string): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  const matchRef = ref(database, `${MATCHES_PATH}/${matchId}`)
-  await remove(matchRef)
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  await deleteDoc(doc(db, MATCHES_COLLECTION, matchId))
 }
 
 // 試合の変更をリアルタイムで監視
 export function watchMatches(callback: (matches: Match[]) => void): () => void {
-  if (!isFirebaseAvailable || !database) {
+  if (!isFirebaseAvailable || !db) {
     if (isProduction) {
       console.error('[Firebase] 本番環境でFirebaseが利用できません')
     }
-    // 開発環境ではIndexedDBのみで動作（リアルタイム監視なし）
-    return () => {} // 何もしない関数を返す
+    return () => {}
   }
-  const matchesRef = ref(database, MATCHES_PATH)
-  const unsubscribe = onValue(matchesRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.val()
-      const matches = Object.values(data).map((match: any) =>
-        deserializeMatch(match)
-      )
-      callback(matches)
-    } else {
-      callback([])
-    }
-  })
-  return () => off(matchesRef, 'value', unsubscribe)
+  return onSnapshot(
+    collection(db, MATCHES_COLLECTION),
+    snapshot => { callback(snapshot.docs.map(d => deserializeMatch(d.data()))) },
+    error => { console.error('[Firestore] watchMatches error:', error.code) }
+  )
 }
 
 // すべてのデータをクリア（リセット用）
 export async function clearAllData(): Promise<void> {
-  if (!isFirebaseAvailable || !database) return notAvailable()
-  await Promise.all([
-    remove(ref(database, MEMBERS_PATH)),
-    remove(ref(database, MATCHES_PATH)),
+  if (!isFirebaseAvailable || !db) return notAvailable()
+  const [membersSnapshot, matchesSnapshot] = await Promise.all([
+    getDocs(collection(db, MEMBERS_COLLECTION)),
+    getDocs(collection(db, MATCHES_COLLECTION)),
   ])
+  const batch = writeBatch(db)
+  membersSnapshot.docs.forEach(d => batch.delete(d.ref))
+  matchesSnapshot.docs.forEach(d => batch.delete(d.ref))
+  await batch.commit()
 }
-
-// --- IndexedDBとの互換性維持（オプション）---
-// ローカルストレージのフォールバック機能として残す場合
 
 export { initDB } from './indexedDB'

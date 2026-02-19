@@ -33,6 +33,7 @@ export default function MatchDetail({
 }: MatchDetailProps) {
   const [tab, setTab] = useState<'members' | 'stats' | 'results'>('members')
   const [inputMode, setInputMode] = useState<{ active: boolean; member?: Member; inning?: number }>({ active: false })
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // グローバルメンバーの名前変更を試合メンバーに反映
   const getUpdatedMembers = (): Member[] => {
@@ -49,10 +50,13 @@ export default function MatchDetail({
   const updatedMembers = getUpdatedMembers()
 
   const handleDeleteMatch = () => {
-    if (confirm(`「${match.date} vs ${match.opponent}」を削除してもよろしいですか？`)) {
-      onDeleteMatch?.(match.id)
-      onClose()
-    }
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false)
+    onDeleteMatch?.(match.id)
+    onClose()
   }
 
   const handleAddMember = (member: Member) => {
@@ -215,7 +219,22 @@ export default function MatchDetail({
         <div className="match-header">
           <h2>{match.date} vs {match.opponent}</h2>
           <div className="header-buttons">
-            {isAdmin && <button className="btn-delete-match" onClick={handleDeleteMatch} title="この試合を削除">🗑️</button>}
+            {isAdmin && !showDeleteConfirm && (
+              <button className="btn-delete-match" onClick={handleDeleteMatch} title="この試合を削除">🗑️</button>
+            )}
+            {isAdmin && showDeleteConfirm && (
+              <>
+                <span style={{ color: 'white', fontSize: '0.85rem', marginRight: 8 }}>本当に削除？</span>
+                <button
+                  style={{ background: '#ff3b30', border: 'none', color: 'white', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', marginRight: 4 }}
+                  onClick={handleConfirmDelete}
+                >削除</button>
+                <button
+                  style={{ background: 'rgba(255,255,255,0.3)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: 6, cursor: 'pointer' }}
+                  onClick={() => setShowDeleteConfirm(false)}
+                >キャンセル</button>
+              </>
+            )}
             <button className="btn-close" onClick={onClose}>✕</button>
           </div>
         </div>
