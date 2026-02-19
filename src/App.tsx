@@ -38,7 +38,6 @@ function App() {
         })
       } catch (error) {
         console.error('Failed to load members from Firebase:', error)
-        console.error('Error details:', error)
         alert('データベース接続エラー: Firebase設定を確認してください')
       } finally {
         setIsLoading(false)
