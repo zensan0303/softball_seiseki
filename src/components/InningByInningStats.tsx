@@ -695,7 +695,7 @@ export default function InningByInningStats({
                 <td className="cell-stat">{getBattingAverage(member.id)}</td>
               </tr>
             ))}
-            {/* 代打選手の行 */}}
+            {/* 代打選手の行 */}
             {getSubstituteMembers().map((member) => (
               <tr key={`substitute-${member.id}`} className="player-row substitute-row">
                 <td className="cell-batting-order">代</td>
