@@ -415,6 +415,12 @@
   cursor: not-allowed;
 }
 
+.btn-stolen-base-out.active {
+  background-color: rgba(249, 115, 22, 0.7);
+  color: white;
+  border-color: #f97316;
+}
+
 .result-select:hover {
   border-color: #3b82f6;
   background-color: rgba(15, 23, 42, 0.9);

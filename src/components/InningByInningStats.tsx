@@ -566,18 +566,17 @@ export default function InningByInningStats({
     onUpdateStats(memberId, updatedPlayerStats)
   }
 
-  const handleUpdateStolenBaseOuts = (memberId: string, inningNumber: number, delta: number) => {
+  const handleUpdateStolenBaseOuts = (memberId: string, inningNumber: number, value: number) => {
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
     
     if (allInningsInThisInning.length === 0) return
     
     const targetInning = allInningsInThisInning[0]
-    const newStolenBaseOuts = Math.max(0, Math.min(3, (targetInning.stolenBaseOuts || 0) + delta))
     
     const updated = playerInnings.map(i =>
       i.inningNumber === inningNumber && (i.atBatNumber || 1) === (targetInning.atBatNumber || 1)
-        ? { ...i, stolenBaseOuts: newStolenBaseOuts }
+        ? { ...i, stolenBaseOuts: value }
         : i
     )
     
@@ -794,7 +793,7 @@ interface ResultSelectorProps {
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
-  onUpdateStolenBaseOuts: (delta: number) => void
+  onUpdateStolenBaseOuts: (value: number) => void
   isClosed: boolean
   canAddAtBat: boolean
   isAdmin: boolean
@@ -851,14 +850,9 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
 
   const handleAddStolenBaseOut = () => {
     if (!currentAtBat) return
-    if ((currentAtBat.stolenBaseOuts || 0) < 3) {
-      onUpdateStolenBaseOuts(1)
-    }
-  }
-
-  const handleRemoveStolenBaseOut = () => {
-    if (!currentAtBat || !currentAtBat.stolenBaseOuts || currentAtBat.stolenBaseOuts === 0) return
-    onUpdateStolenBaseOuts(-1)
+    // トグル：1なら0に、0なら1に
+    const newValue = (currentAtBat.stolenBaseOuts || 0) > 0 ? 0 : 1
+    onUpdateStolenBaseOuts(newValue)
   }
 
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
@@ -984,23 +978,13 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                 {isAdmin && (
                   <div className="stolen-base-controls">
                     <button
-                      className="btn-stolen-base-out"
+                      className={`btn-stolen-base-out ${(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'active' : ''}`}
                       onClick={handleAddStolenBaseOut}
-                      disabled={isClosed || !currentAtBat || (currentAtBat.stolenBaseOuts || 0) >= 3}
-                      title="走塁死（盗塁失敗）を追加（アウトカウント）"
+                      disabled={isClosed || !currentAtBat}
+                      title={(currentAtBat?.stolenBaseOuts || 0) > 0 ? '走塁死を取り消す' : '走塁死（盗塁失敗）を記録（アウトカウント）'}
                     >
-                      ☠️ {currentAtBat?.stolenBaseOuts || 0}
+                      ☠️ {(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'ON' : 'OFF'}
                     </button>
-                    {currentAtBat && (currentAtBat.stolenBaseOuts || 0) > 0 && (
-                      <button
-                        className="btn-stolen-base-remove"
-                        onClick={handleRemoveStolenBaseOut}
-                        disabled={isClosed}
-                        title="走塁死を削除"
-                      >
-                        −
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
