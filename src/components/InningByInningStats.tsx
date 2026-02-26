@@ -800,7 +800,7 @@ interface ResultSelectorProps {
   isAdmin: boolean
 }
 
-function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, isClosed, canAddAtBat, isAdmin }: ResultSelectorProps) {
+function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBat, onUpdateStolenBases, onUpdateStolenBaseOuts, isClosed, canAddAtBat, isAdmin }: ResultSelectorProps) {
   const [showRBISelect, setShowRBISelect] = useState(false)
   const [selectedResult, setSelectedResult] = useState<ResultType>('')
   const [selectedAtBatIndex, setSelectedAtBatIndex] = useState(0)
@@ -847,6 +847,18 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   const handleRemoveStolenBase = () => {
     if (!currentAtBat || currentAtBat.stolenBases === 0) return
     onUpdateStolenBases(-1)
+  }
+
+  const handleAddStolenBaseOut = () => {
+    if (!currentAtBat) return
+    if ((currentAtBat.stolenBaseOuts || 0) < 3) {
+      onUpdateStolenBaseOuts(1)
+    }
+  }
+
+  const handleRemoveStolenBaseOut = () => {
+    if (!currentAtBat || !currentAtBat.stolenBaseOuts || currentAtBat.stolenBaseOuts === 0) return
+    onUpdateStolenBaseOuts(-1)
   }
 
   const displayText = currentAtBat ? getDisplayText(getResultLabelForSelector(currentAtBat), currentAtBat.rbis || 0) : '-'
