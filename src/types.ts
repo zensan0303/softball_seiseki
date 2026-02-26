@@ -23,6 +23,7 @@ export interface InningStats {
   triples: number     // 三塁打
   homeRuns: number    // 本塁打
   stolenBases: number // 盗塁
+  stolenBaseOuts: number  // 走塁死（盗塁失敗によるアウト）
   sacrificeBunts: number  // 犠バント
   sacrificeFlies: number  // 犠フライ
   errors: number      // エラー

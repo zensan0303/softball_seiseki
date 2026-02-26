@@ -68,12 +68,14 @@ export default function MatchDetail({
   }
 
   const handleRemoveMember = (memberId: string) => {
+    // 新しいMapを作成してから削除（元のMapを直接変更しない）
+    const newStats = new Map(match.stats)
+    newStats.delete(memberId)
     const updatedMatch: Match = {
       ...match,
       members: updatedMembers.filter(m => m.id !== memberId),
+      stats: newStats,
     }
-    // 成績も削除
-    updatedMatch.stats.delete(memberId)
     onUpdate(updatedMatch)
   }
 

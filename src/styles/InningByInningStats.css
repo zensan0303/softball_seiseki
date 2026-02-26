@@ -384,6 +384,37 @@
   transform: scale(0.95);
 }
 
+/* 走塁死ボタン（盗塁失敗） */
+.btn-stolen-base-out {
+  flex: 1;
+  padding: 2px 0;
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid #f97316;
+  border-radius: 2px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn-stolen-base-out:hover:not(:disabled) {
+  background-color: rgba(249, 115, 22, 0.4);
+  color: white;
+  transform: scale(1.05);
+}
+
+.btn-stolen-base-out:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn-stolen-base-out:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .result-select:hover {
   border-color: #3b82f6;
   background-color: rgba(15, 23, 42, 0.9);

@@ -116,11 +116,12 @@ export default function MemberList({
 
   const handleAssignMember = (battingOrder: number, memberId: string) => {
     if (!memberId) {
-      // 割り当てを解除
+      // 割り当てを解除 → 試合メンバーから完全削除（成績も削除される）
       const member = membersByOrder.get(battingOrder)
       if (member) {
-        // 打順を0にして未設定状態にする（削除はしない）
-        onUpdateMember({ ...member, battingOrder: 0 })
+        if (window.confirm(`「${member.name}」をこの試合から削除しますか？\n（入力済みの成績も削除されます）`)) {
+          onRemoveMember(member.id)
+        }
       }
       return
     }

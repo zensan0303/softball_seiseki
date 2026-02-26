@@ -84,6 +84,10 @@ export default function InningByInningStats({
           if (inning.sacrificeFlies > 0) {
             outCount += inning.sacrificeFlies
           }
+          // 走塁死：アウト換算
+          if (inning.stolenBaseOuts && inning.stolenBaseOuts > 0) {
+            outCount += inning.stolenBaseOuts
+          }
         }
       })
     })
@@ -302,6 +306,7 @@ export default function InningByInningStats({
         triples: 0,
         homeRuns: 0,
         stolenBases: 0,
+        stolenBaseOuts: 0,
         sacrificeBunts: 0,
         sacrificeFlies: 0,
         errors: 0,
@@ -317,6 +322,7 @@ export default function InningByInningStats({
     updatedInning.triples = 0
     updatedInning.homeRuns = 0
     updatedInning.stolenBases = 0
+    updatedInning.stolenBaseOuts = 0
     updatedInning.sacrificeBunts = 0
     updatedInning.sacrificeFlies = 0
     updatedInning.errors = 0
@@ -497,6 +503,7 @@ export default function InningByInningStats({
       triples: 0,
       homeRuns: 0,
       stolenBases: 0,
+      stolenBaseOuts: 0,
       sacrificeBunts: 0,
       sacrificeFlies: 0,
       errors: 0,
@@ -548,6 +555,29 @@ export default function InningByInningStats({
     const updated = playerInnings.map(i =>
       i.inningNumber === inningNumber && (i.atBatNumber || 1) === (targetInning.atBatNumber || 1)
         ? { ...i, stolenBases: newStolenBases }
+        : i
+    )
+    
+    setMemberStatsMap(new Map(memberStatsMap.set(memberId, updated)))
+    const updatedPlayerStats: PlayerStats = {
+      playerId: memberId,
+      innings: updated,
+    }
+    onUpdateStats(memberId, updatedPlayerStats)
+  }
+
+  const handleUpdateStolenBaseOuts = (memberId: string, inningNumber: number, delta: number) => {
+    const playerInnings = [...(memberStatsMap.get(memberId) || [])]
+    const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
+    
+    if (allInningsInThisInning.length === 0) return
+    
+    const targetInning = allInningsInThisInning[0]
+    const newStolenBaseOuts = Math.max(0, Math.min(3, (targetInning.stolenBaseOuts || 0) + delta))
+    
+    const updated = playerInnings.map(i =>
+      i.inningNumber === inningNumber && (i.atBatNumber || 1) === (targetInning.atBatNumber || 1)
+        ? { ...i, stolenBaseOuts: newStolenBaseOuts }
         : i
     )
     
@@ -650,6 +680,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onUpdateStolenBaseOuts={(delta) => handleUpdateStolenBaseOuts(member.id, inningNumber, delta)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                         isAdmin={isAdmin}
@@ -664,7 +695,7 @@ export default function InningByInningStats({
                 <td className="cell-stat">{getBattingAverage(member.id)}</td>
               </tr>
             ))}
-            {/* 代打選手の行 */}
+            {/* 代打選手の行 */}}
             {getSubstituteMembers().map((member) => (
               <tr key={`substitute-${member.id}`} className="player-row substitute-row">
                 <td className="cell-batting-order">代</td>
@@ -700,6 +731,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
+                        onUpdateStolenBaseOuts={(delta) => handleUpdateStolenBaseOuts(member.id, inningNumber, delta)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                         isAdmin={isAdmin}
@@ -762,6 +794,7 @@ interface ResultSelectorProps {
   onAddAtBat: () => void
   onRemoveAtBat: (atBatIndex: number) => void
   onUpdateStolenBases: (delta: number) => void
+  onUpdateStolenBaseOuts: (delta: number) => void
   isClosed: boolean
   canAddAtBat: boolean
   isAdmin: boolean
@@ -903,39 +936,63 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
               <option value="dead-ball">DB (デッドボール)</option>
             </select>
           )}
-          <div className="result-actions">
-            {isAdmin && !isClosed && canAddAtBat && (
-              <button
-                className="btn-add-atbat"
-                onClick={onAddAtBat}
-                title="この回での次の打席を追加"
-              >
-                +
-              </button>
-            )}
             {isAdmin && (
-              <div className="stolen-base-controls">
-                <button
-                  className="btn-stolen-base"
-                  onClick={handleAddStolenBase}
-                  disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
-                  title="盗塁を追加（最大3）"
-                >
-                  🏃 {currentAtBat?.stolenBases || 0}
-                </button>
-                {currentAtBat && currentAtBat.stolenBases > 0 && (
+              <div className="result-actions">
+                {isAdmin && !isClosed && canAddAtBat && (
                   <button
-                    className="btn-stolen-base-remove"
-                    onClick={handleRemoveStolenBase}
-                    disabled={isClosed}
-                    title="盗塁を削除"
+                    className="btn-add-atbat"
+                    onClick={onAddAtBat}
+                    title="この回での次の打席を追加"
                   >
-                    −
+                    +
                   </button>
+                )}
+                {isAdmin && (
+                  <div className="stolen-base-controls">
+                    <button
+                      className="btn-stolen-base"
+                      onClick={handleAddStolenBase}
+                      disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
+                      title="盗塁を追加（最大3）"
+                    >
+                      🏃 {currentAtBat?.stolenBases || 0}
+                    </button>
+                    {currentAtBat && currentAtBat.stolenBases > 0 && (
+                      <button
+                        className="btn-stolen-base-remove"
+                        onClick={handleRemoveStolenBase}
+                        disabled={isClosed}
+                        title="盗塁を削除"
+                      >
+                        −
+                      </button>
+                    )}
+                  </div>
+                )}
+                {isAdmin && (
+                  <div className="stolen-base-controls">
+                    <button
+                      className="btn-stolen-base-out"
+                      onClick={handleAddStolenBaseOut}
+                      disabled={isClosed || !currentAtBat || (currentAtBat.stolenBaseOuts || 0) >= 3}
+                      title="走塁死（盗塁失敗）を追加（アウトカウント）"
+                    >
+                      ☠️ {currentAtBat?.stolenBaseOuts || 0}
+                    </button>
+                    {currentAtBat && (currentAtBat.stolenBaseOuts || 0) > 0 && (
+                      <button
+                        className="btn-stolen-base-remove"
+                        onClick={handleRemoveStolenBaseOut}
+                        disabled={isClosed}
+                        title="走塁死を削除"
+                      >
+                        −
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
-          </div>
         </>
       )}
     </div>
