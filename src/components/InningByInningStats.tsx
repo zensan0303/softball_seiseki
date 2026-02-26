@@ -983,7 +983,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                       disabled={isClosed || !currentAtBat}
                       title={(currentAtBat?.stolenBaseOuts || 0) > 0 ? '走塁死を取り消す' : '走塁死（盗塁失敗）を記録（アウトカウント）'}
                     >
-                      ☠️ {(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'ON' : 'OFF'}
+                      ☠️ {(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'アウト' : '－'}
                     </button>
                   </div>
                 )}
