@@ -116,12 +116,10 @@ export default function MemberList({
 
   const handleAssignMember = (battingOrder: number, memberId: string) => {
     if (!memberId) {
-      // 割り当てを解除 → 試合メンバーから完全削除（成績も削除される）
+      // 割り当てを解除 → 打順未設定に戻すだけ（試合には残る・成績も保持）
       const member = membersByOrder.get(battingOrder)
       if (member) {
-        if (window.confirm(`「${member.name}」をこの試合から削除しますか？\n（入力済みの成績も削除されます）`)) {
-          onRemoveMember(member.id)
-        }
+        onUpdateMember({ ...member, battingOrder: 0 })
       }
       return
     }
@@ -302,11 +300,11 @@ export default function MemberList({
                     <button
                       className="btn-remove"
                       onClick={() => {
-                        if (window.confirm(`「${m.name}」をこの試合から削除しますか？`)) {
+                        if (window.confirm(`「${m.name}」をこの試合から削除しますか？\n（入力済みの成績も削除されます）`)) {
                           onRemoveMember(m.id)
                         }
                       }}
-                      title="メンバーから削除"
+                      title="試合から削除（成績も削除）"
                     >
                       🗑️
                     </button>
@@ -338,7 +336,7 @@ export default function MemberList({
                     <button
                       className="btn-remove-member"
                       onClick={() => handleAssignMember(order, '')}
-                      title="割り当てを解除"
+                      title="打順から外す（選手・成績は残ります）"
                     >
                       ✕
                     </button>
