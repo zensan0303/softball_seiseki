@@ -73,7 +73,7 @@ export default function MatchDetail({
     newStats.delete(memberId)
     const updatedMatch: Match = {
       ...match,
-      members: updatedMembers.filter(m => m.id !== memberId),
+      members: match.members.filter(m => m.id !== memberId),
       stats: newStats,
     }
     onUpdate(updatedMatch)
