@@ -140,6 +140,52 @@
   border: 1px solid #007bff;
 }
 
+/* 縦配置 member-display (守備位置を下段に表示) */
+.member-display.member-display-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+/* 選手名 + 削除ボタン 行 */
+.member-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* 守備位置ドロップダウン行 */
+.position-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 守備位置ドロップダウン（スロット内・幅いっぱい）*/
+.position-select-full {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 読み取り専用バッジ行 */
+.position-badges-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ベンチメンバーの守備位置セレクト群 */
+.bench-position-selects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+
 .member-name-display {
   flex: 1;
   font-size: 14px;
@@ -479,4 +525,59 @@
 
 .btn-remove-bench:active {
   transform: scale(0.95);
+}
+
+/* 守備位置バッジ */
+.position-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background-color: #3b82f6;
+  color: white;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.position-badge.position-dp {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.position-badge.position-fp {
+  background-color: #8b5cf6;
+  color: white;
+}
+
+/* 守備位置セレクト */
+.position-select {
+  padding: 4px 6px;
+  font-size: 0.82rem;
+  border: 1.5px solid #93c5fd;
+  border-radius: 5px;
+  background-color: #eff6ff;
+  color: #1e40af;
+  cursor: pointer;
+  flex-shrink: 0;
+  max-width: 120px;
+}
+
+.position-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.position-select.position-select-sm {
+  font-size: 0.78rem;
+  padding: 3px 5px;
+  max-width: 110px;
+}
+
+/* ベンチメンバーのアクション領域 */
+.bench-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

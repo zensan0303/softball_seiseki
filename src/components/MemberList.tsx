@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { Member } from '../types'
+import type { Member, FieldPosition } from '../types'
+import { FIELD_POSITION_LABELS } from '../types'
 import '../styles/MemberList.css'
 
 interface MemberListProps {
@@ -51,22 +52,22 @@ export default function MemberList({
         assignedToOtherOrders.add(member.id)
       }
     })
-    
+
     // ベンチメンバーも除外
     benchMembers.forEach(m => {
       assignedToOtherOrders.add(m.id)
     })
-    
+
     // グローバルメンバーと現在のメンバーをマージして、重複を排除
     const allAvailableMembers = new Map<string, Member>()
-    
+
     // グローバルメンバーを追加（スターターとベンチに割り当てられていないもの）
     globalMembers.forEach(m => {
       if (!assignedToOtherOrders.has(m.id)) {
         allAvailableMembers.set(m.id, m)
       }
     })
-    
+
     // 次に、試合のメンバーで打順未設定または1-9以外のメンバーを追加
     safeMembers.forEach(m => {
       const isUnassigned = !m.battingOrder || m.battingOrder === 0 || m.battingOrder < 1 || m.battingOrder > 9
@@ -80,7 +81,7 @@ export default function MemberList({
         }
       }
     })
-    
+
     return Array.from(allAvailableMembers.values())
   }
 
@@ -89,23 +90,23 @@ export default function MemberList({
     const assigned = new Set<string>()
     membersByOrder.forEach(member => assigned.add(member.id))
     benchMembers.forEach(member => assigned.add(member.id))
-    
+
     return globalMembers.filter(m => !assigned.has(m.id))
   }
 
   // ベンチメンバーを追加
   const handleAddBenchMember = (memberId: string) => {
     if (!memberId) return
-    
+
     const member = globalMembers.find(m => m.id === memberId)
     if (!member) return
-    
+
     // 次の利用可能な打順番号を取得（10番から開始）
     const existingBenchOrders = benchMembers.map(m => m.battingOrder || 10)
-    const nextOrder = existingBenchOrders.length > 0 
-      ? Math.max(...existingBenchOrders) + 1 
+    const nextOrder = existingBenchOrders.length > 0
+      ? Math.max(...existingBenchOrders) + 1
       : 10
-    
+
     onAddMember({ ...member, battingOrder: nextOrder })
   }
 
@@ -126,7 +127,7 @@ export default function MemberList({
 
     // 現在のメンバーリストから探す
     let memberToAssign = members.find(m => m.id === memberId)
-    
+
     // メンバーリストにない場合は、グローバルメンバーから取得して追加
     if (!memberToAssign) {
       const globalMember = globalMembers.find(m => m.id === memberId)
@@ -163,7 +164,7 @@ export default function MemberList({
         alert(`「${newMemberName}」は既に登録されています`)
         return
       }
-      
+
       onAddNewMember(newMemberName)
       setNewMemberName('')
       setShowNewMemberForm(false)
@@ -319,7 +320,7 @@ export default function MemberList({
         {Array.from({ length: 9 }, (_, i) => i + 1).map((order) => {
           const member = membersByOrder.get(order)
           const availableMembers = getAvailableMembersForOrder(order)
-          
+
           // 現在選択されているメンバーが利用可能なメンバーに含まれていない場合は追加
           const membersToShow = [...availableMembers]
           if (member && !membersToShow.find(m => m.id === member.id)) {
@@ -330,16 +331,79 @@ export default function MemberList({
             <div key={order} className="batting-order-slot">
               <div className="order-number">第{order}番</div>
               {member ? (
-                <div className="member-display">
-                  <span className="member-name-display">{member.name}</span>
-                  {isAdmin && (
-                    <button
-                      className="btn-remove-member"
-                      onClick={() => handleAssignMember(order, '')}
-                      title="打順から外す（選手・成績は残ります）"
-                    >
-                      ✕
-                    </button>
+                <div className="member-display member-display-col">
+                  {/* 選手名 + 削除ボタン */}
+                  <div className="member-name-row">
+                    <span className="member-name-display">{member.name}</span>
+                    {isAdmin && (
+                      <button
+                        className="btn-remove-member"
+                        onClick={() => handleAssignMember(order, '')}
+                        title="打順から外す（選手・成績は残ります）"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {/* 守備位置選択（管理者のみドロップダウン、一般は読み取り専用バッジ） */}
+                  {isAdmin ? (
+                    <div className="position-row">
+                      <select
+                        className="position-select position-select-full"
+                        value={member.fieldPosition || ''}
+                        onChange={(e) => {
+                          const pos = e.target.value as FieldPosition
+                          onUpdateMember({ ...member, fieldPosition: pos, fpActualPosition: pos === 'FP' ? member.fpActualPosition : undefined })
+                        }}
+                        title="守備位置を選択"
+                      >
+                        <option value="">― 守備位置 ―</option>
+                        <option value="P">投（投手）</option>
+                        <option value="C">捕（捕手）</option>
+                        <option value="1B">一（一塁手）</option>
+                        <option value="2B">二（二塁手）</option>
+                        <option value="3B">三（三塁手）</option>
+                        <option value="SS">遊（遊撃手）</option>
+                        <option value="LF">左（左翼手）</option>
+                        <option value="CF">中（中堅手）</option>
+                        <option value="RF">右（右翼手）</option>
+                        <option value="DP">DP（指名選手）</option>
+                        <option value="FP">FP（守備専門）</option>
+                      </select>
+                      {/* FP選択時：実際の守備ポジションも選択 */}
+                      {member.fieldPosition === 'FP' && (
+                        <select
+                          className="position-select position-select-full"
+                          value={member.fpActualPosition || ''}
+                          onChange={(e) => onUpdateMember({ ...member, fpActualPosition: e.target.value as FieldPosition })}
+                          title="FPとして守るポジション"
+                        >
+                          <option value="">― FPの守備ポジション ―</option>
+                          <option value="P">投（投手）</option>
+                          <option value="C">捕（捕手）</option>
+                          <option value="1B">一（一塁手）</option>
+                          <option value="2B">二（二塁手）</option>
+                          <option value="3B">三（三塁手）</option>
+                          <option value="SS">遊（遊撃手）</option>
+                          <option value="LF">左（左翼手）</option>
+                          <option value="CF">中（中堅手）</option>
+                          <option value="RF">右（右翼手）</option>
+                        </select>
+                      )}
+                    </div>
+                  ) : (
+                    !!member.fieldPosition && (
+                      <div className="position-badges-row">
+                        <span className={`position-badge ${member.fieldPosition === 'FP' ? 'position-fp' : member.fieldPosition === 'DP' ? 'position-dp' : ''}`}>
+                          {FIELD_POSITION_LABELS[member.fieldPosition]}
+                        </span>
+                        {member.fieldPosition === 'FP' && member.fpActualPosition && (
+                          <span className="position-badge">
+                            {FIELD_POSITION_LABELS[member.fpActualPosition]}
+                          </span>
+                        )}
+                      </div>
+                    )
                   )}
                 </div>
               ) : isAdmin ? (
@@ -383,22 +447,73 @@ export default function MemberList({
             ))}
           </select>
         )}
-        
+
         <div className="bench-members-list">
           {benchMembers.map((member) => (
             <div key={member.id} className="bench-member-item">
               <div className="bench-member-info">
                 <span className="bench-order-badge">{member.battingOrder}</span>
                 <span className="bench-member-name">{member.name}</span>
+                {!!member.fieldPosition && (
+                  <span className={`position-badge ${member.fieldPosition === 'FP' ? 'position-fp' : member.fieldPosition === 'DP' ? 'position-dp' : ''}`}>
+                    {FIELD_POSITION_LABELS[member.fieldPosition]}
+                  </span>
+                )}
               </div>
               {isAdmin && (
-                <button
-                  className="btn-remove-bench"
-                  onClick={() => handleRemoveBenchMember(member.id)}
-                  title="削除"
-                >
-                  ✕
-                </button>
+                <div className="bench-member-actions">
+                  <div className="bench-position-selects">
+                    <select
+                      className="position-select position-select-sm"
+                      value={member.fieldPosition || ''}
+                      onChange={(e) => {
+                        const pos = e.target.value as FieldPosition
+                        onUpdateMember({ ...member, fieldPosition: pos, fpActualPosition: pos === 'FP' ? member.fpActualPosition : undefined })
+                      }}
+                      title="守備位置を選択"
+                    >
+                      <option value="">― 守備位置 ―</option>
+                      <option value="P">投（投手）</option>
+                      <option value="C">捕（捕手）</option>
+                      <option value="1B">一（一塁手）</option>
+                      <option value="2B">二（二塁手）</option>
+                      <option value="3B">三（三塁手）</option>
+                      <option value="SS">遊（遊撃手）</option>
+                      <option value="LF">左（左翼手）</option>
+                      <option value="CF">中（中堅手）</option>
+                      <option value="RF">右（右翼手）</option>
+                      <option value="DP">DP（指名選手）</option>
+                      <option value="FP">FP（守備専門）</option>
+                    </select>
+                    {/* FP選択時の実守備位置 */}
+                    {member.fieldPosition === 'FP' && (
+                      <select
+                        className="position-select position-select-sm"
+                        value={member.fpActualPosition || ''}
+                        onChange={(e) => onUpdateMember({ ...member, fpActualPosition: e.target.value as FieldPosition })}
+                        title="FPの守備位置"
+                      >
+                        <option value="">― FPの守備ポジション ―</option>
+                        <option value="P">投（投手）</option>
+                        <option value="C">捕（捕手）</option>
+                        <option value="1B">一（一塁手）</option>
+                        <option value="2B">二（二塁手）</option>
+                        <option value="3B">三（三塁手）</option>
+                        <option value="SS">遊（遊撃手）</option>
+                        <option value="LF">左（左翼手）</option>
+                        <option value="CF">中（中堅手）</option>
+                        <option value="RF">右（右翼手）</option>
+                      </select>
+                    )}
+                  </div>
+                  <button
+                    className="btn-remove-bench"
+                    onClick={() => handleRemoveBenchMember(member.id)}
+                    title="削除"
+                  >
+                    ✕
+                  </button>
+                </div>
               )}
             </div>
           ))}

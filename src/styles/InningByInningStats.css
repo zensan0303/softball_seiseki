@@ -90,6 +90,41 @@
   font-size: 11px;
 }
 
+/* 守備位置列 */
+.header-position {
+  width: 34px;
+  min-width: 34px;
+  font-size: 11px;
+}
+
+.cell-position {
+  width: 34px;
+  min-width: 34px;
+  text-align: center;
+  padding: 4px 2px;
+}
+
+.position-badge-sm {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: #3b82f6;
+  color: white;
+  white-space: nowrap;
+}
+
+.position-badge-sm.position-dp {
+  background-color: #f59e0b;
+}
+
+/* DP 選手行のハイライト */
+.row-dp {
+  background-color: rgba(245, 158, 11, 0.04);
+}
+
+
 .stats-table tbody tr {
   height: 48px;
   border-bottom: 1px solid #e0e0e0;
