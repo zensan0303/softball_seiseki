@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Member, PlayerStats, InningStats } from '../types'
+import { FIELD_POSITION_LABELS } from '../types'
 import '../styles/InningByInningStats.css'
 
 type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
@@ -29,16 +30,16 @@ export default function InningByInningStats({
     const newMap = new Map<string, InningStats[]>()
     let maxInning = 9
     const subsSet = new Set<string>()
-    
+
     stats.forEach((playerStats) => {
       if (!playerStats || !playerStats.innings) return // 無効なデータはスキップ
-      
+
       newMap.set(playerStats.playerId, playerStats.innings)
       const inningNumbers = playerStats.innings.map(i => i.inningNumber)
       if (inningNumbers.length > 0) {
         maxInning = Math.max(maxInning, Math.max(...inningNumbers))
       }
-      
+
       // 代打として出場した選手を復元
       playerStats.innings.forEach((inning) => {
         if (inning.substitutePlayerId) {
@@ -46,7 +47,7 @@ export default function InningByInningStats({
         }
       })
     })
-    
+
     setMemberStatsMap(newMap)
     setMaxInnings(maxInning)
     setSubstituteMembers(prev => {
@@ -97,12 +98,12 @@ export default function InningByInningStats({
   // 複数打席の追加が可能かどうかを判定
   const canAddAnotherAtBat = (inningNumber: number, memberId: string): boolean => {
     const allInningsInThisInning = memberStatsMap.get(memberId)?.filter(i => i.inningNumber === inningNumber) || []
-    
+
     // 3つ以上の打席は追加不可
     if (allInningsInThisInning.length >= 3) {
       return false
     }
-    
+
     // 最後の打席が選択されていない場合は追加不可
     if (allInningsInThisInning.length > 0) {
       const lastInning = allInningsInThisInning[allInningsInThisInning.length - 1]
@@ -110,13 +111,13 @@ export default function InningByInningStats({
         return false
       }
     }
-    
+
     // 3アウトに達している場合は追加不可
     const outsCount = getOutsInInning(inningNumber)
     if (outsCount >= 3) {
       return false
     }
-    
+
     return true
   }
 
@@ -133,7 +134,7 @@ export default function InningByInningStats({
           }
         })
       })
-      
+
       // この打順がまだ打っていない場合、グレーアウト
       if (!alreadyBattedPlayers.has(battingOrder)) {
         return true
@@ -144,7 +145,7 @@ export default function InningByInningStats({
 
   // 代打として追加可能な選手を取得（打順10番以降 or 打順なし）
   const getAvailableSubstitutes = (): Member[] => {
-    return members.filter(m => 
+    return members.filter(m =>
       !m.battingOrder || m.battingOrder === 0 || m.battingOrder >= 10
     )
   }
@@ -166,7 +167,7 @@ export default function InningByInningStats({
       newSet.delete(memberId)
       return newSet
     })
-    
+
     // その選手の成績をクリア
     const playerStats = stats.get(memberId)
     if (playerStats) {
@@ -181,20 +182,20 @@ export default function InningByInningStats({
   const advanceRunners = (inningNumber: number, bases: number): string[] => {
     const inningRunners = runners.get(inningNumber)
     const scoredPlayers: string[] = []
-    
+
     if (!inningRunners) {
       return scoredPlayers
     }
-    
+
     const newBases = new Map(inningRunners.bases)
-    
+
     // 3塁のランナーが進塁可能な場合は得点
     if (bases >= 1) {
       const thirdBase = newBases.get(3) || new Set()
       thirdBase.forEach(playerId => scoredPlayers.push(playerId))
       newBases.set(3, new Set())
     }
-    
+
     // 2塁のランナーを進塁
     const secondBase = newBases.get(2) || new Set()
     if (bases >= 2) {
@@ -211,7 +212,7 @@ export default function InningByInningStats({
       })
     }
     newBases.set(2, new Set())
-    
+
     // 1塁のランナーを進塁
     const firstBase = newBases.get(1) || new Set()
     if (bases >= 3) {
@@ -231,24 +232,24 @@ export default function InningByInningStats({
       })
     }
     newBases.set(1, new Set())
-    
+
     // 新しい塁状態を保存
     const newRunners_ = new Map(runners)
     newRunners_.set(inningNumber, { bases: newBases })
     setRunners(newRunners_)
-    
+
     return scoredPlayers
   }
-  
+
   // ランナーを更新する関数
   const updateRunners = (inningNumber: number, playerId: string, result: ResultType) => {
     let inningRunners = runners.get(inningNumber)
     if (!inningRunners) {
       inningRunners = { bases: new Map([[1, new Set()], [2, new Set()], [3, new Set()]]) }
     }
-    
+
     const newBases = new Map(inningRunners.bases)
-    
+
     if (result === 'single' || result === 'double' || result === 'triple') {
       // ヒット（本塁打除外）：打者が塁に出る（1塁に配置）
       const firstBase = newBases.get(1) || new Set()
@@ -264,7 +265,7 @@ export default function InningByInningStats({
       const firstBase = newBases.get(1) || new Set()
       const secondBase = newBases.get(2) || new Set()
       const thirdBase = newBases.get(3) || new Set()
-      
+
       // 既存のランナーを進塁させる
       firstBase.forEach(runnerId => {
         secondBase.add(runnerId)
@@ -272,7 +273,7 @@ export default function InningByInningStats({
       secondBase.forEach(runnerId => {
         thirdBase.add(runnerId)
       })
-      
+
       // 新しい打者を1塁に配置
       newBases.set(1, new Set([playerId]))
       newBases.set(2, secondBase)
@@ -289,7 +290,7 @@ export default function InningByInningStats({
     const allInningsInThisInning = memberStatsMap.get(memberId)?.filter(i => i.inningNumber === inningNumber) || []
     const currentInning = allInningsInThisInning[atBatIndex]
     let updatedInning: InningStats
-    
+
     if (currentInning) {
       updatedInning = { ...currentInning }
     } else {
@@ -385,7 +386,7 @@ export default function InningByInningStats({
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const otherInnings = playerInnings.filter(i => !(i.inningNumber === inningNumber))
     const updatedInningsList = [...otherInnings, ...allInningsInThisInning.slice(0, atBatIndex), updatedInning, ...allInningsInThisInning.slice(atBatIndex + 1)]
-    
+
     if (result === '') {
       // 結果をクリア
       const filtered = playerInnings.filter(i => !(i.inningNumber === inningNumber && i.atBatNumber === (atBatIndex + 1)))
@@ -403,7 +404,7 @@ export default function InningByInningStats({
         return (a.atBatNumber || 1) - (b.atBatNumber || 1)
       })
       setMemberStatsMap(new Map(memberStatsMap.set(memberId, updatedInningsList)))
-      
+
       const updatedPlayerStats: PlayerStats = {
         playerId: memberId,
         innings: updatedInningsList,
@@ -411,17 +412,17 @@ export default function InningByInningStats({
       onUpdateStats(memberId, updatedPlayerStats)
       // ランナーを更新（ヒット結果を記録）
       updateRunners(inningNumber, memberId, result)
-      
+
       // ヒット系の結果の場合、ランナーを進塁させて得点を計算
       let bases = 0
       if (result === 'single') bases = 1
       else if (result === 'double') bases = 2
       else if (result === 'triple') bases = 3
       else if (result === 'homerun') bases = 4
-      
+
       if (bases > 0) {
         const scoredPlayers = advanceRunners(inningNumber, bases)
-        
+
         // 得点したランナーの成績を更新
         scoredPlayers.forEach(runnerId => {
           const runnerInnings = [...(memberStatsMap.get(runnerId) || [])]
@@ -438,12 +439,12 @@ export default function InningByInningStats({
             onUpdateStats(runnerId, updatedRunnerStats)
           }
         })
-        
+
         // 三塁打で打者自身も得点
         if (result === 'triple') {
           updatedInning.runs = 1
         }
-        
+
         // 打点（RBI）はユーザーが入力した値を使用
         if (rbi > 0) {
           updatedInning.rbis = rbi
@@ -470,7 +471,7 @@ export default function InningByInningStats({
             }
           })
         }
-        
+
         // ランナーを更新（エラーで打者が1塁に出て、既存のランナーが進塁）
         updateRunners(inningNumber, memberId, result)
       } else {
@@ -485,11 +486,11 @@ export default function InningByInningStats({
     if (!canAddAnotherAtBat(inningNumber, memberId)) {
       return
     }
-    
+
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
     const nextAtBatNumber = (Math.max(...allInningsInThisInning.map(i => i.atBatNumber || 1), 0) || 0) + 1
-    
+
     const newInning: InningStats = {
       inningNumber,
       battingOrder: members.find(m => m.id === memberId)?.battingOrder,
@@ -509,13 +510,13 @@ export default function InningByInningStats({
       errors: 0,
       deadBalls: 0,
     }
-    
+
     playerInnings.push(newInning)
     playerInnings.sort((a, b) => {
       if (a.inningNumber !== b.inningNumber) return a.inningNumber - b.inningNumber
       return (a.atBatNumber || 1) - (b.atBatNumber || 1)
     })
-    
+
     setMemberStatsMap(new Map(memberStatsMap.set(memberId, playerInnings)))
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
@@ -527,14 +528,14 @@ export default function InningByInningStats({
   const handleRemoveAtBat = (memberId: string, inningNumber: number, atBatIndex: number) => {
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
-    
+
     if (allInningsInThisInning.length <= 1) {
       return // 最後の打席は削除できない
     }
 
     // 削除対象の打席を取り除く
     const filtered = playerInnings.filter(i => !(i.inningNumber === inningNumber && i.atBatNumber === (atBatIndex + 1)))
-    
+
     setMemberStatsMap(new Map(memberStatsMap.set(memberId, filtered)))
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
@@ -546,18 +547,18 @@ export default function InningByInningStats({
   const handleUpdateStolenBases = (memberId: string, inningNumber: number, delta: number) => {
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
-    
+
     if (allInningsInThisInning.length === 0) return
-    
+
     const targetInning = allInningsInThisInning[0]
     const newStolenBases = Math.max(0, Math.min(3, targetInning.stolenBases + delta))
-    
+
     const updated = playerInnings.map(i =>
       i.inningNumber === inningNumber && (i.atBatNumber || 1) === (targetInning.atBatNumber || 1)
         ? { ...i, stolenBases: newStolenBases }
         : i
     )
-    
+
     setMemberStatsMap(new Map(memberStatsMap.set(memberId, updated)))
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
@@ -569,17 +570,17 @@ export default function InningByInningStats({
   const handleUpdateStolenBaseOuts = (memberId: string, inningNumber: number, value: number) => {
     const playerInnings = [...(memberStatsMap.get(memberId) || [])]
     const allInningsInThisInning = playerInnings.filter(i => i.inningNumber === inningNumber)
-    
+
     if (allInningsInThisInning.length === 0) return
-    
+
     const targetInning = allInningsInThisInning[0]
-    
+
     const updated = playerInnings.map(i =>
       i.inningNumber === inningNumber && (i.atBatNumber || 1) === (targetInning.atBatNumber || 1)
         ? { ...i, stolenBaseOuts: value }
         : i
     )
-    
+
     setMemberStatsMap(new Map(memberStatsMap.set(memberId, updated)))
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
@@ -593,6 +594,8 @@ export default function InningByInningStats({
     return members
       .filter(m => {
         if (!m) return false
+        // FP（守備専門選手）は打撃成績表から除外
+        if (m.fieldPosition === 'FP') return false
         const order = m.battingOrder
         // 打順が未設定（undefined, null, 0）または1-9の範囲内の場合は含める
         return order === undefined || order === null || order === 0 || (order >= 1 && order <= 9)
@@ -631,18 +634,19 @@ export default function InningByInningStats({
     <div className="inning-by-inning-container">
       <div className="stats-table-wrapper">
         <h3>成績入力</h3>
-        
+
         {/* ランナー情報 */}
         <div className="inning-info-bar">
           <div className="info-text">
             <span>左のセルをクリックして結果を選択してください</span>
           </div>
         </div>
-        
+
         <table className="stats-table">
           <thead>
             <tr>
               <th className="header-batting-order">打順</th>
+              <th className="header-position">守</th>
               <th className="header-name">選手名</th>
               {Array.from({ length: maxInnings }, (_, i) => (
                 <th key={i + 1} className="header-inning">第{i + 1}回</th>
@@ -656,8 +660,13 @@ export default function InningByInningStats({
           </thead>
           <tbody>
             {getMembersByBattingOrder().map((member) => (
-              <tr key={member.id} className="player-row">
+              <tr key={member.id} className={`player-row${member.fieldPosition === 'DP' ? ' row-dp' : ''}`}>
                 <td className="cell-batting-order">{member.battingOrder || '-'}</td>
+                <td className="cell-position">
+                  <span className={`position-badge-sm ${member.fieldPosition === 'DP' ? 'position-dp' : ''}`}>
+                    {member.fieldPosition ? FIELD_POSITION_LABELS[member.fieldPosition] : '-'}
+                  </span>
+                </td>
                 <td className="cell-name">{member.name}</td>
                 {Array.from({ length: maxInnings }, (_, i) => {
                   const inningNumber = i + 1
@@ -665,7 +674,7 @@ export default function InningByInningStats({
                   const allInnings = getAllInningStats(member.id, inningNumber)
                   const isClosed = isInningClosed(inningNumber, member.battingOrder || 0)
                   const hasMultipleAtBats = allInnings.length > 1
-                  
+
                   return (
                     <td
                       key={inningNumber}
@@ -679,7 +688,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
-                        onUpdateStolenBaseOuts={(delta) => handleUpdateStolenBaseOuts(member.id, inningNumber, delta)}
+                        onUpdateStolenBaseOuts={(value) => handleUpdateStolenBaseOuts(member.id, inningNumber, value)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                         isAdmin={isAdmin}
@@ -716,7 +725,7 @@ export default function InningByInningStats({
                   const allInnings = getAllInningStats(member.id, inningNumber)
                   const isClosed = false  // 代打選手は3アウトでもグレーアウトしない
                   const hasMultipleAtBats = allInnings.length > 1
-                  
+
                   return (
                     <td
                       key={inningNumber}
@@ -730,7 +739,7 @@ export default function InningByInningStats({
                         onAddAtBat={() => handleAddAtBat(member.id, inningNumber)}
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
-                        onUpdateStolenBaseOuts={(delta) => handleUpdateStolenBaseOuts(member.id, inningNumber, delta)}
+                        onUpdateStolenBaseOuts={(value) => handleUpdateStolenBaseOuts(member.id, inningNumber, value)}
                         isClosed={isClosed}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                         isAdmin={isAdmin}
@@ -809,7 +818,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
   const handleResultChange = (result: ResultType, atBatIndex: number = 0) => {
     setSelectedResult(result)
     setSelectedAtBatIndex(atBatIndex)
-    
+
     if (result === 'out' || result === 'walk' || result === '') {
       onSelect(result, 0, atBatIndex)
       setShowRBISelect(false)
@@ -942,53 +951,49 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
               <option value="dead-ball">DB (デッドボール)</option>
             </select>
           )}
-            {isAdmin && (
-              <div className="result-actions">
-                {isAdmin && !isClosed && canAddAtBat && (
+          {isAdmin && (
+            <div className="result-actions">
+              {!isClosed && canAddAtBat && (
+                <button
+                  className="btn-add-atbat"
+                  onClick={onAddAtBat}
+                  title="この回での次の打席を追加"
+                >
+                  +
+                </button>
+              )}
+              <div className="stolen-base-controls">
+                <button
+                  className="btn-stolen-base"
+                  onClick={handleAddStolenBase}
+                  disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
+                  title="盗塁を追加（最大3）"
+                >
+                  🏃 {currentAtBat?.stolenBases || 0}
+                </button>
+                {currentAtBat && currentAtBat.stolenBases > 0 && (
                   <button
-                    className="btn-add-atbat"
-                    onClick={onAddAtBat}
-                    title="この回での次の打席を追加"
+                    className="btn-stolen-base-remove"
+                    onClick={handleRemoveStolenBase}
+                    disabled={isClosed}
+                    title="盗塁を削除"
                   >
-                    +
+                    −
                   </button>
                 )}
-                {isAdmin && (
-                  <div className="stolen-base-controls">
-                    <button
-                      className="btn-stolen-base"
-                      onClick={handleAddStolenBase}
-                      disabled={isClosed || !currentAtBat || currentAtBat.stolenBases >= 3}
-                      title="盗塁を追加（最大3）"
-                    >
-                      🏃 {currentAtBat?.stolenBases || 0}
-                    </button>
-                    {currentAtBat && currentAtBat.stolenBases > 0 && (
-                      <button
-                        className="btn-stolen-base-remove"
-                        onClick={handleRemoveStolenBase}
-                        disabled={isClosed}
-                        title="盗塁を削除"
-                      >
-                        −
-                      </button>
-                    )}
-                  </div>
-                )}
-                {isAdmin && (
-                  <div className="stolen-base-controls">
-                    <button
-                      className={`btn-stolen-base-out ${(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'active' : ''}`}
-                      onClick={handleAddStolenBaseOut}
-                      disabled={isClosed || !currentAtBat}
-                      title={(currentAtBat?.stolenBaseOuts || 0) > 0 ? '走塁死を取り消す' : '走塁死（盗塁失敗）を記録（アウトカウント）'}
-                    >
-                      ☠️ {(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'アウト' : '－'}
-                    </button>
-                  </div>
-                )}
               </div>
-            )}
+              <div className="stolen-base-controls">
+                <button
+                  className={`btn-stolen-base-out ${(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'active' : ''}`}
+                  onClick={handleAddStolenBaseOut}
+                  disabled={isClosed || !currentAtBat}
+                  title={(currentAtBat?.stolenBaseOuts || 0) > 0 ? '走塁死を取り消す' : '走塁死（盗塁失敗）を記録（アウトカウント）'}
+                >
+                  ☠️ {(currentAtBat?.stolenBaseOuts || 0) > 0 ? 'アウト' : '－'}
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -1011,15 +1016,15 @@ function getDisplayText(result: ResultType, rbi: number): string {
     'dead-ball': 'DB',
     '': '-',
   }
-  
+
   const resultText = resultMap[result] || '-'
-  
+
   // ヒット系や犠打・犠飛、アウト(打点)の場合、打点があれば表示
   const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly', 'out-rbi'].includes(result)
   if (hasRBI && rbi > 0) {
     return `${resultText}(${rbi})`
   }
-  
+
   return resultText
 }
 
