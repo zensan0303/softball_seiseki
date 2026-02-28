@@ -1,8 +1,41 @@
+// 守備位置の型定義（ソフトボール）
+export type FieldPosition =
+  | 'P'   // 投手
+  | 'C'   // 捕手
+  | '1B'  // 一塁手
+  | '2B'  // 二塁手
+  | '3B'  // 三塁手
+  | 'SS'  // 遊撃手
+  | 'LF'  // 左翼手
+  | 'CF'  // 中堅手
+  | 'RF'  // 右翼手
+  | 'DP'  // 指名選手（バッティング専門）
+  | 'FP'  // 守備専門（打撃成績不要）
+  | ''
+
+// 守備位置の日本語ラベルマップ
+export const FIELD_POSITION_LABELS: Record<string, string> = {
+  P: '投',
+  C: '捕',
+  '1B': '一',
+  '2B': '二',
+  '3B': '三',
+  SS: '遊',
+  LF: '左',
+  CF: '中',
+  RF: '右',
+  DP: 'DP',
+  FP: 'FP',
+  '': '-',
+}
+
 // メンバー情報
 export interface Member {
   id: string
   name: string
-  battingOrder?: number  // 打順（1-9番）
+  battingOrder?: number          // 打順（1-9番）
+  fieldPosition?: FieldPosition  // 守備位置（DP/FP含む）
+  fpActualPosition?: FieldPosition  // FP選手の実際の守備位置（P/C/1B等）
 }
 
 // 打球方向の型定義
@@ -23,6 +56,7 @@ export interface InningStats {
   triples: number     // 三塁打
   homeRuns: number    // 本塁打
   stolenBases: number // 盗塁
+  stolenBaseOuts: number  // 走塁死（盗塁失敗によるアウト）
   sacrificeBunts: number  // 犠バント
   sacrificeFlies: number  // 犠フライ
   errors: number      // エラー
@@ -62,7 +96,7 @@ export interface PlayerOverallStats {
   totalSacrificeFlies: number
   totalErrors: number
   avgBases: number  // 塁打
-  
+
   // 計算される統計値
   battingAverage: number  // 打率 (安打 / 打数)
   sluggingPercentage: number  // 長打率 (塁打 / 打数)

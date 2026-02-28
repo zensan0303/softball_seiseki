@@ -90,6 +90,41 @@
   font-size: 11px;
 }
 
+/* 守備位置列 */
+.header-position {
+  width: 34px;
+  min-width: 34px;
+  font-size: 11px;
+}
+
+.cell-position {
+  width: 34px;
+  min-width: 34px;
+  text-align: center;
+  padding: 4px 2px;
+}
+
+.position-badge-sm {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: #3b82f6;
+  color: white;
+  white-space: nowrap;
+}
+
+.position-badge-sm.position-dp {
+  background-color: #f59e0b;
+}
+
+/* DP 選手行のハイライト */
+.row-dp {
+  background-color: rgba(245, 158, 11, 0.04);
+}
+
+
 .stats-table tbody tr {
   height: 48px;
   border-bottom: 1px solid #e0e0e0;
@@ -382,6 +417,43 @@
 
 .btn-stolen-base-remove:active {
   transform: scale(0.95);
+}
+
+/* 走塁死ボタン（盗塁失敗） */
+.btn-stolen-base-out {
+  flex: 1;
+  padding: 2px 0;
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid #f97316;
+  border-radius: 2px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.btn-stolen-base-out:hover:not(:disabled) {
+  background-color: rgba(249, 115, 22, 0.4);
+  color: white;
+  transform: scale(1.05);
+}
+
+.btn-stolen-base-out:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn-stolen-base-out:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-stolen-base-out.active {
+  background-color: rgba(249, 115, 22, 0.7);
+  color: white;
+  border-color: #f97316;
 }
 
 .result-select:hover {

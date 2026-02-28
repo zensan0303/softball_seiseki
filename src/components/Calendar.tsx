@@ -581,7 +581,6 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           match={selectedMatch}
           globalMembers={globalMembers}
           onAddMember={onAddMember}
-          onRemoveMember={onRemoveMember}
           onRemoveGlobalMember={handleRemoveGlobalMember}
           onUpdateGlobalMember={handleUpdateGlobalMember}
           onClose={() => setSelectedMatch(null)}
