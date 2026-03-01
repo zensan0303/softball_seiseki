@@ -68,6 +68,7 @@ export interface InningStats {
 export interface PlayerStats {
   playerId: string
   innings: InningStats[]  // 各回の成績
+  isSubstitute?: boolean  // 代打選手として登録されているか
 }
 
 // 試合情報
@@ -83,6 +84,7 @@ export interface Match {
 export interface PlayerOverallStats {
   playerId: string
   name: string
+  plateAppearances: number  // 打席数 (PA = AB + BB + HBP + SH + SF)
   totalAtBats: number
   totalHits: number
   totalWalks: number

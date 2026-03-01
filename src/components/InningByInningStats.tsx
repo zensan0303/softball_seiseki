@@ -40,7 +40,10 @@ export default function InningByInningStats({
         maxInning = Math.max(maxInning, Math.max(...inningNumbers))
       }
 
-      // 代打として出場した選手を復元
+      // 代打として出場した選手を復元（isSubstituteフラグ または 旧形式のsubstitutePlayerId）
+      if (playerStats.isSubstitute) {
+        subsSet.add(playerStats.playerId)
+      }
       playerStats.innings.forEach((inning) => {
         if (inning.substitutePlayerId) {
           subsSet.add(playerStats.playerId)
@@ -73,8 +76,8 @@ export default function InningByInningStats({
     memberStatsMap.forEach((innings) => {
       innings.forEach((inning) => {
         if (inning.inningNumber === inningNumber) {
-          // 通常のアウト：atBats > 0 かつ hits = 0
-          if (inning.atBats > 0 && inning.hits === 0) {
+          // 通常のアウト：atBats > 0 かつ hits = 0 かつ errors = 0（エラーはアウトではなく出塁）
+          if (inning.atBats > 0 && inning.hits === 0 && (!inning.errors || inning.errors === 0)) {
             outCount += inning.atBats
           }
           // 犠打：アウト換算
@@ -150,14 +153,26 @@ export default function InningByInningStats({
     )
   }
 
+  // 代打登録済みかどうか判定（ローカルstate または stats propの isSubstituteフラグ）
+  const isSubstituteMember = (memberId: string): boolean => {
+    return substituteMembers.has(memberId) || (stats.get(memberId)?.isSubstitute === true)
+  }
+
   // 代打選手として追加された選手を取得
   const getSubstituteMembers = (): Member[] => {
-    return members.filter(m => substituteMembers.has(m.id))
+    return members.filter(m => isSubstituteMember(m.id))
   }
 
   // 代打選手を追加
   const handleAddSubstitute = (memberId: string) => {
     setSubstituteMembers(prev => new Set([...prev, memberId]))
+    // isSubstituteフラグをFirebaseに保存して永続化
+    const existing = stats.get(memberId)
+    onUpdateStats(memberId, {
+      playerId: memberId,
+      innings: existing?.innings || [],
+      isSubstitute: true,
+    })
   }
 
   // 代打選手を削除
@@ -168,14 +183,12 @@ export default function InningByInningStats({
       return newSet
     })
 
-    // その選手の成績をクリア
-    const playerStats = stats.get(memberId)
-    if (playerStats) {
-      onUpdateStats(memberId, {
-        ...playerStats,
-        innings: []
-      })
-    }
+    // isSubstituteフラグをクリアして成績もリセット
+    onUpdateStats(memberId, {
+      playerId: memberId,
+      innings: [],
+      isSubstitute: false,
+    })
   }
 
   // ランナーを進塁させ、得点するランナーを計算
@@ -372,9 +385,9 @@ export default function InningByInningStats({
       updatedInning.sacrificeFlies = 1
       // ※ atBats: 0のまま（アウトだが打数に含まない）
     } else if (result === 'error') {
-      // エラー：相手のエラーで出塁（打数に含まない）
+      // エラー：相手のエラーで出塁（公式ルール上、打数にカウントされる）
+      updatedInning.atBats = 1
       updatedInning.errors = 1
-      // ※ atBats: 0のまま（打数に含まない）
     } else if (result === 'dead-ball') {
       // デッドボール：死球で出塁（打数に含まない）
       updatedInning.deadBalls = 1
@@ -773,7 +786,7 @@ export default function InningByInningStats({
           >
             <option value="">代打選手を追加</option>
             {getAvailableSubstitutes()
-              .filter(m => !substituteMembers.has(m.id))
+              .filter(m => !isSubstituteMember(m.id))
               .map(m => (
                 <option key={m.id} value={m.id}>
                   {m.name}
