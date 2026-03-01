@@ -31,6 +31,28 @@ export default function MatchDetail({
 }: MatchDetailProps) {
   const [tab, setTab] = useState<'members' | 'stats' | 'results'>('members')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isEditingOpponent, setIsEditingOpponent] = useState(false)
+  const [opponentInput, setOpponentInput] = useState(match.opponent)
+
+  const handleOpponentEdit = () => {
+    setOpponentInput(match.opponent)
+    setIsEditingOpponent(true)
+  }
+
+  const handleOpponentSave = () => {
+    const trimmed = opponentInput.trim()
+    if (!trimmed) {
+      alert('対戦相手名を入力してください')
+      return
+    }
+    onUpdate({ ...match, opponent: trimmed })
+    setIsEditingOpponent(false)
+  }
+
+  const handleOpponentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleOpponentSave()
+    if (e.key === 'Escape') setIsEditingOpponent(false)
+  }
 
   // グローバルメンバーの名前変更を試合メンバーに反映
   const getUpdatedMembers = (): Member[] => {
@@ -110,7 +132,30 @@ export default function MatchDetail({
     <div className="modal-overlay" onClick={onClose}>
       <div className="match-detail-content" onClick={(e) => e.stopPropagation()}>
         <div className="match-header">
-          <h2>{match.date} vs {match.opponent}</h2>
+          <div className="match-title-area">
+            <span className="match-date">{match.date}</span>
+            <span className="match-vs"> vs </span>
+            {isAdmin && isEditingOpponent ? (
+              <span className="opponent-edit-inline">
+                <input
+                  className="opponent-input"
+                  value={opponentInput}
+                  onChange={e => setOpponentInput(e.target.value)}
+                  onKeyDown={handleOpponentKeyDown}
+                  autoFocus
+                />
+                <button className="opponent-save-btn" onClick={handleOpponentSave}>✓</button>
+                <button className="opponent-cancel-btn" onClick={() => setIsEditingOpponent(false)}>✕</button>
+              </span>
+            ) : (
+              <span className="opponent-name">
+                {match.opponent}
+                {isAdmin && (
+                  <button className="opponent-edit-btn" onClick={handleOpponentEdit} title="対戦相手名を編集">✏️</button>
+                )}
+              </span>
+            )}
+          </div>
           <div className="header-buttons">
             {isAdmin && !showDeleteConfirm && (
               <button className="btn-delete-match" onClick={handleDeleteMatch} title="この試合を削除">🗑️</button>

@@ -170,11 +170,15 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             sacrificeBunts: 0,
             sacrificeFlies: 0,
             deadBalls: 0,
+            errors: 0,
           }
         }
         memberStats[playerId].matches += 1
         stats.innings.forEach(inning => {
-          memberStats[playerId].atBats += inning.atBats
+          // 後方互換性: 旧データはエラー時 atBats=0, errors=1 で保存されている
+          // 新データはエラー時 atBats=1, errors=1 なので、atBats===0 の場合のみ errors を加算
+          const errorAtBats = inning.errors > 0 && inning.atBats === 0 ? inning.errors : 0
+          memberStats[playerId].atBats += inning.atBats + errorAtBats
           memberStats[playerId].hits += inning.hits
           memberStats[playerId].doubles += inning.doubles
           memberStats[playerId].triples += inning.triples
@@ -186,6 +190,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           memberStats[playerId].sacrificeBunts += inning.sacrificeBunts
           memberStats[playerId].sacrificeFlies += inning.sacrificeFlies
           memberStats[playerId].deadBalls += (inning.deadBalls || 0)
+          memberStats[playerId].errors += (inning.errors || 0)
         })
       })
     })
@@ -258,13 +263,15 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       
       ops: (() => {
         const sorted = [...qualifiedStats].sort((a, b) => {
-          const aOps = (a.atBats > 0 ? a.hits / a.atBats : 0) + ((a.atBats + a.walks) > 0 ? (a.hits + a.walks) / (a.atBats + a.walks) : 0)
-          const bOps = (b.atBats > 0 ? b.hits / b.atBats : 0) + ((b.atBats + b.walks) > 0 ? (b.hits + b.walks) / (b.atBats + b.walks) : 0)
-          return bOps - aOps
+          const aSlg = a.atBats > 0 ? (a.hits + a.doubles + a.triples * 2 + a.homeRuns * 3) / a.atBats : 0
+          const aObp = (a.atBats + a.walks + a.sacrificeFlies) > 0 ? (a.hits + a.walks) / (a.atBats + a.walks + a.sacrificeFlies) : 0
+          const bSlg = b.atBats > 0 ? (b.hits + b.doubles + b.triples * 2 + b.homeRuns * 3) / b.atBats : 0
+          const bObp = (b.atBats + b.walks + b.sacrificeFlies) > 0 ? (b.hits + b.walks) / (b.atBats + b.walks + b.sacrificeFlies) : 0
+          return (bSlg + bObp) - (aSlg + aObp)
         })
         return getTop5WithTies(sorted, s => {
           const slg = s.atBats > 0 ? (s.hits + s.doubles + s.triples * 2 + s.homeRuns * 3) / s.atBats : 0
-          const obp = (s.atBats + s.walks) > 0 ? (s.hits + s.walks) / (s.atBats + s.walks) : 0
+          const obp = (s.atBats + s.walks + s.sacrificeFlies) > 0 ? (s.hits + s.walks) / (s.atBats + s.walks + s.sacrificeFlies) : 0
           return slg + obp
         })
       })(),
@@ -392,12 +399,12 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
             <div style={{ paddingLeft: '20px' }}>
               {rankings.ops?.map((stat, idx) => {
                 const slg = stat.atBats > 0 ? (stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats : 0
-                const obp = (stat.atBats + stat.walks) > 0 ? (stat.hits + stat.walks) / (stat.atBats + stat.walks) : 0
+                const obp = (stat.atBats + stat.walks + stat.sacrificeFlies) > 0 ? (stat.hits + stat.walks) / (stat.atBats + stat.walks + stat.sacrificeFlies) : 0
                 const ops = (slg + obp).toFixed(3)
                 const prevOps = idx > 0 && rankings.ops ? (() => {
                   const prevStat = rankings.ops[idx - 1]
                   const prevSlg = prevStat.atBats > 0 ? (prevStat.hits + prevStat.doubles + prevStat.triples * 2 + prevStat.homeRuns * 3) / prevStat.atBats : 0
-                  const prevObp = (prevStat.atBats + prevStat.walks) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks) : 0
+                  const prevObp = (prevStat.atBats + prevStat.walks + prevStat.sacrificeFlies) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks + prevStat.sacrificeFlies) : 0
                   return (prevSlg + prevObp).toFixed(3)
                 })() : null
                 const rank = prevOps === null || ops !== prevOps ? idx + 1 : 
@@ -405,7 +412,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
                     for (let i = idx - 1; i >= 0; i--) {
                       const prevStat = rankings.ops![i]
                       const prevSlg = prevStat.atBats > 0 ? (prevStat.hits + prevStat.doubles + prevStat.triples * 2 + prevStat.homeRuns * 3) / prevStat.atBats : 0
-                      const prevObp = (prevStat.atBats + prevStat.walks) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks) : 0
+                      const prevObp = (prevStat.atBats + prevStat.walks + prevStat.sacrificeFlies) > 0 ? (prevStat.hits + prevStat.walks) / (prevStat.atBats + prevStat.walks + prevStat.sacrificeFlies) : 0
                       if ((prevSlg + prevObp).toFixed(3) !== ops) return i + 2
                     }
                     return 1

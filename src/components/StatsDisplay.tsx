@@ -27,6 +27,7 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
           <thead>
             <tr>
               <th>選手名</th>
+              <th>打席</th>
               <th>打数</th>
               <th>安打</th>
               <th>打率</th>
@@ -41,6 +42,7 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
               <th>盗塁</th>
               <th>犠打</th>
               <th>犠フライ</th>
+              <th>四死球</th>
               <th>エラー</th>
             </tr>
           </thead>
@@ -48,6 +50,7 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
             {sortedStats.map((stat) => (
               <tr key={stat.playerId}>
                 <td className="player-name">{stat.name}</td>
+                <td>{stat.plateAppearances}</td>
                 <td>{stat.totalAtBats}</td>
                 <td>{stat.totalHits}</td>
                 <td className="highlight">{stat.battingAverage.toFixed(3)}</td>
@@ -62,6 +65,7 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
                 <td>{stat.totalStolenBases}</td>
                 <td>{stat.totalSacrificeBunts}</td>
                 <td>{stat.totalSacrificeFlies}</td>
+                <td>{stat.totalWalks}</td>
                 <td>{stat.totalErrors}</td>
               </tr>
             ))}
@@ -76,14 +80,15 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
       <div className="stats-legend">
         <h4>統計値の説明</h4>
         <ul>
+          <li><strong>打席 (PA)</strong>: 打数 + 四死球 + 犠打 + 犠フライ（エラー出塁は打数に含む）</li>
           <li><strong>打率</strong>: 安打 ÷ 打数</li>
           <li><strong>長打率</strong>: 塁打 ÷ 打数</li>
-          <li><strong>出塁率</strong>: (安打 + 四死球) ÷ (打数 + 四死球)</li>
+          <li><strong>出塁率</strong>: (安打 + 四死球) ÷ (打数 + 四死球 + 犠フライ)</li>
           <li><strong>OPS</strong>: 長打率 + 出塁率</li>
-          <li><strong>盗塁</strong>: ランナーが盗塁で出塁した数</li>
-          <li><strong>犠打</strong>: ランナーを進塁させるために報告された犠打</li>
-          <li><strong>犠フライ</strong>: ランナーを帰塁させるために打たれた犠フライ</li>
-          <li><strong>エラー</strong>: 相手チームのエラーで出塁した数</li>
+          <li><strong>四死球</strong>: 四球 + 死球（いずれも打数に含まない）</li>
+          <li><strong>犠打</strong>: ランナーを進塁させるために打たれた犠バント（打数に含まない）</li>
+          <li><strong>犠フライ</strong>: ランナーを本塁に返すために打たれた犠フライ（打数に含まない）</li>
+          <li><strong>エラー</strong>: 相手エラーで出塁した数（打数・打席にカウント、安打はつかない）</li>
         </ul>
       </div>
     </div>
