@@ -43,6 +43,12 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     // リアルタイム監視を設定（他のユーザーの変更を自動反映）
     const unsubscribe = watchMatches((updatedMatches) => {
       setMatches(updatedMatches)
+      // モーダルが開いている場合、selectedMatchも最新データに更新する
+      setSelectedMatch(prev => {
+        if (!prev) return null
+        const updated = updatedMatches.find(m => m.id === prev.id)
+        return updated ?? prev
+      })
     })
 
     return () => {
@@ -372,7 +378,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
                     return 1
                   })()
                 const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
-                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.hits}本</div>
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.hits}</div>
               })}
             </div>
           </div>
@@ -389,7 +395,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
                     return 1
                   })()
                 const colorClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : ''
-                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.rbis}点</div>
+                return <div key={idx} className={`ranking-item ${colorClass}`}>{rank}位 {stat.name} - {stat.rbis}</div>
               })}
             </div>
           </div>
@@ -454,7 +460,6 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
               <th>三</th>
               <th>本</th>
               <th>四</th>
-              <th>点</th>
               <th>打点</th>
               <th>盗</th>
               <th>犠</th>
@@ -484,7 +489,6 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
                   <td>{stat.triples}</td>
                   <td>{stat.homeRuns}</td>
                   <td>{stat.walks}</td>
-                  <td>{stat.runs}</td>
                   <td>{stat.rbis}</td>
                   <td>{sb}</td>
                   <td>{sh}</td>
@@ -594,7 +598,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onDeleteMatch={handleDeleteMatch}
           isAdmin={isAdmin}
           onUpdate={(updatedMatch) => {
-            setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m))
+            setMatches(prev => prev.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)
             // Firebaseに保存
             saveMatch(updatedMatch).catch((error) => {

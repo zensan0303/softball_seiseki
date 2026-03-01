@@ -81,7 +81,7 @@ export default function MatchDetail({
   const handleAddMember = (member: Member) => {
     const updatedMatch: Match = {
       ...match,
-      members: [...match.members, member],
+      members: [...updatedMembers, member],
     }
     onUpdate(updatedMatch)
   }
@@ -92,7 +92,7 @@ export default function MatchDetail({
     newStats.delete(memberId)
     const updatedMatch: Match = {
       ...match,
-      members: match.members.filter(m => m.id !== memberId),
+      members: updatedMembers.filter(m => m.id !== memberId),
       stats: newStats,
     }
     onUpdate(updatedMatch)
