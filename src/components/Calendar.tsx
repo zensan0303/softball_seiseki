@@ -153,6 +153,7 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       sacrificeBunts: number
       sacrificeFlies: number
       deadBalls: number
+      errors: number
     }> = {}
 
     matchList.forEach(match => {
