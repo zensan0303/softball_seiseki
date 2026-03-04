@@ -93,7 +93,7 @@
 
 .weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   background: transparent;
   padding: 0 0 10px 0;
@@ -112,12 +112,16 @@
   font-weight: 700;
   border: 1px solid rgba(148, 163, 184, 0.2);
   letter-spacing: 0.5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
   background: transparent;
   padding: 10px 0;
@@ -134,6 +138,9 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 14px;
   border: 1.5px solid rgba(148, 163, 184, 0.3);
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .calendar-day:hover {
@@ -178,6 +185,9 @@
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
   letter-spacing: 0.3px;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
 }
 
 /* レスポンシブデザイン */
@@ -206,7 +216,7 @@
 
 @media (max-width: 768px) {
   .calendar-container {
-    padding: 15px 10px;
+    padding: 15px 8px;
   }
 
   .calendar-container h1 {
@@ -239,31 +249,74 @@
 
   .weekdays {
     margin: 20px 0 10px 0;
-    gap: 8px;
+    gap: 4px;
   }
 
   .weekdays div {
-    padding: 10px 5px;
-    font-size: 0.85rem;
+    padding: 8px 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0;
   }
 
   .calendar-grid {
-    gap: 10px;
+    gap: 4px;
     margin: 10px 0;
   }
 
   .calendar-day {
-    min-height: 100px;
-    padding: 10px;
+    min-height: 80px;
+    padding: 6px 4px;
   }
 
   .day-number {
-    font-size: 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
   }
 
   .match-badge {
-    font-size: 0.8rem;
-    padding: 6px 10px;
+    font-size: 0.65rem;
+    padding: 4px 4px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-container {
+    padding: 10px 4px;
+  }
+
+  .weekdays {
+    gap: 2px;
+  }
+
+  .weekdays div {
+    padding: 6px 1px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    min-height: 60px;
+    padding: 4px 3px;
+    border-radius: 8px;
+  }
+
+  .day-number {
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+  }
+
+  .match-badge {
+    font-size: 0.6rem;
+    padding: 2px 3px;
+    border-radius: 3px;
+    margin-top: 2px;
+    box-shadow: none;
   }
 }
 
