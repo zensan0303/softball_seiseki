@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Match, Member } from '../types'
 import { getAllMatches, saveMatch, deleteMember, saveMember, deleteMatch, watchMatches } from '../utils/firebaseDB'
 import '../styles/Calendar.css'
@@ -19,6 +19,8 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'calendar' | 'monthly' | 'yearly' | 'all'>('calendar')
+  // 保存処理中フラグ（watchMatchesによるselectedMatchの誤上書きを防ぐ）
+  const isSavingRef = useRef(false)
 
   // 年度を計算（4月始まり）
   const getFiscalYear = (date: Date) => {
@@ -43,12 +45,14 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     // リアルタイム監視を設定（他のユーザーの変更を自動反映）
     const unsubscribe = watchMatches((updatedMatches) => {
       setMatches(updatedMatches)
-      // モーダルが開いている場合、selectedMatchも最新データに更新する
-      setSelectedMatch(prev => {
-        if (!prev) return null
-        const updated = updatedMatches.find(m => m.id === prev.id)
-        return updated ?? prev
-      })
+      // 保存処理中はselectedMatchを上書きしない（守備位置・成績などの変更が失われるのを防ぐ）
+      if (!isSavingRef.current) {
+        setSelectedMatch(prev => {
+          if (!prev) return null
+          const updated = updatedMatches.find(m => m.id === prev.id)
+          return updated ?? prev
+        })
+      }
     })
 
     return () => {
@@ -93,8 +97,9 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
     try {
       await deleteMember(memberId)
       onRemoveMember(memberId)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete member:', error)
+      alert(`選手の削除に失敗しました。\nエラー: ${error?.code ?? error?.message ?? '不明'}`)
     }
   }
 
@@ -104,9 +109,9 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       if (success) {
         await saveMember(member)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update member:', error)
-      // エラーをサイレントに処理
+      alert(`選手情報の更新に失敗しました。\nエラー: ${error?.code ?? error?.message ?? '不明'}`)
     }
   }
 
@@ -601,11 +606,16 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           onUpdate={(updatedMatch) => {
             setMatches(prev => prev.map(m => m.id === updatedMatch.id ? updatedMatch : m))
             setSelectedMatch(updatedMatch)
-            // Firebaseに保存
-            saveMatch(updatedMatch).catch((error) => {
-              console.error('Failed to save updated match to Firebase:', error)
-              // エラーをサイレントに処理
-            })
+            // 保存中フラグをON（watchMatchesによる誤上書きを防ぐ）
+            isSavingRef.current = true
+            saveMatch(updatedMatch)
+              .catch((error: any) => {
+                console.error('Failed to save updated match to Firebase:', error)
+                alert(`試合データの保存に失敗しました。\nエラー: ${error?.code ?? error?.message ?? '不明'}\n\n再度操作するか、ページをリロードしてください。`)
+              })
+              .finally(() => {
+                isSavingRef.current = false
+              })
           }}
         />
       )}

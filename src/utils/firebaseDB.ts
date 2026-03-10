@@ -36,7 +36,7 @@ export async function getAllMembers(): Promise<Member[]> {
 // メンバーを保存（新規または更新）
 export async function saveMember(member: Member): Promise<void> {
   if (!isFirebaseAvailable || !db) return notAvailable()
-  await setDoc(doc(db, MEMBERS_COLLECTION, member.id), member)
+  await setDoc(doc(db, MEMBERS_COLLECTION, member.id), removeUndefined(member))
 }
 
 // 複数のメンバーを一度に保存（バッチ書き込みで効率化）
@@ -44,7 +44,7 @@ export async function saveAllMembers(members: Member[]): Promise<void> {
   if (!isFirebaseAvailable || !db) return notAvailable()
   const batch = writeBatch(db)
   members.forEach(member => {
-    batch.set(doc(db!, MEMBERS_COLLECTION, member.id), member)
+    batch.set(doc(db!, MEMBERS_COLLECTION, member.id), removeUndefined(member))
   })
   await batch.commit()
 }
@@ -68,22 +68,45 @@ export function watchMembers(
   return onSnapshot(
     collection(db, MEMBERS_COLLECTION),
     snapshot => { callback(snapshot.docs.map(d => d.data() as Member)) },
-    error => { console.error('[Firestore] watchMembers error:', error.code) }
+    error => {
+      console.error('[Firestore] watchMembers error:', error.code, error.message)
+      if (error.code === 'permission-denied') {
+        alert('データベースの読み込み権限がありません。ログイン状態を確認してください。')
+      }
+    }
   )
 }
 
 // --- 試合関連の操作 ---
 
+// undefined値を再帰的に除去（Firestoreはundefinedを受け付けないため）
+function removeUndefined(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined)
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const result: any = {}
+    for (const key of Object.keys(obj)) {
+      if (obj[key] !== undefined) {
+        result[key] = removeUndefined(obj[key])
+      }
+    }
+    return result
+  }
+  return obj
+}
+
 // MapをJSON形式に変換（Firestore保存用）
 function serializeMatch(match: Match): any {
-  const statsObject: Record<string, PlayerStats> = {}
+  const statsObject: Record<string, any> = {}
   match.stats.forEach((value, key) => {
-    statsObject[key] = value
+    statsObject[key] = removeUndefined(value)
   })
-  return {
+  return removeUndefined({
     ...match,
+    members: match.members.map(m => removeUndefined(m)),
     stats: statsObject,
-  }
+  })
 }
 
 // JSON形式からMapに変換（Firestore取得用）
@@ -131,7 +154,12 @@ export function watchMatches(callback: (matches: Match[]) => void): () => void {
   return onSnapshot(
     collection(db, MATCHES_COLLECTION),
     snapshot => { callback(snapshot.docs.map(d => deserializeMatch(d.data()))) },
-    error => { console.error('[Firestore] watchMatches error:', error.code) }
+    error => {
+      console.error('[Firestore] watchMatches error:', error.code, error.message)
+      if (error.code === 'permission-denied') {
+        alert('試合データの読み込み権限がありません。ログイン状態を確認してください。')
+      }
+    }
   )
 }
 
