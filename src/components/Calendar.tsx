@@ -313,10 +313,13 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           {matchesOnDay.map(match => (
             <div 
               key={match.id}
-              className="match-badge"
+              className={`match-badge${match.result ? ` match-badge-${match.result}` : ''}`}
               onClick={() => setSelectedMatch(match)}
             >
-              {match.opponent}
+              <span className="match-badge-opponent">{match.opponent}</span>
+              {match.myScore !== undefined && match.opponentScore !== undefined && (
+                <span className="match-badge-score">{match.myScore}-{match.opponentScore}</span>
+              )}
             </div>
           ))}
         </div>
@@ -335,6 +338,13 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
       return <div className="empty-stats">この期間に試合がありません</div>
     }
 
+    // チーム勝敗集計
+    const wins = matchList.filter(m => m.result === 'win').length
+    const losses = matchList.filter(m => m.result === 'loss').length
+    const draws = matchList.filter(m => m.result === 'draw').length
+    const resultRecorded = wins + losses + draws
+    const winPct = resultRecorded > 0 ? (wins / (wins + losses) || 0).toFixed(3) : '-'
+
     const fiscalYear = getFiscalYear(currentDate)
 
     return (
@@ -349,6 +359,16 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
 
         {/* ランキング表示 */}
         <div className="rankings-section">
+          {/* チーム勝敗 */}
+          <div className="ranking-box team-record-box">
+            <h4>チーム成績</h4>
+            <div className="team-record-grid">
+              <div className="team-record-item win">{wins}<span>勝</span></div>
+              <div className="team-record-item loss">{losses}<span>負</span></div>
+              <div className="team-record-item draw">{draws}<span>引</span></div>
+              <div className="team-record-item pct"><span>勝率</span>{winPct}</div>
+            </div>
+          </div>
           <div className="ranking-box">
             <h4>打率ランキング</h4>
             <p style={{ fontSize: '0.75rem', color: '#666', margin: '0 0 8px 0', textAlign: 'center' }}>※規定打席到達者のみ</p>

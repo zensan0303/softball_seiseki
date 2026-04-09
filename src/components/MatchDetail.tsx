@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Match, Member, PlayerStats } from '../types'
+import type { Match, Member, PlayerStats, MatchResult } from '../types'
 import { calculatePlayerStats } from '../utils/statsCalculator'
 import '../styles/MatchDetail.css'
 import MemberList from './MemberList'
@@ -33,6 +33,22 @@ export default function MatchDetail({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isEditingOpponent, setIsEditingOpponent] = useState(false)
   const [opponentInput, setOpponentInput] = useState(match.opponent)
+
+  // 試合結果入力用の状態
+  const [myScoreInput, setMyScoreInput] = useState<string>(match.myScore !== undefined ? String(match.myScore) : '')
+  const [opponentScoreInput, setOpponentScoreInput] = useState<string>(match.opponentScore !== undefined ? String(match.opponentScore) : '')
+
+  const handleResultSave = () => {
+    const myScore = myScoreInput === '' ? undefined : Number(myScoreInput)
+    const opponentScore = opponentScoreInput === '' ? undefined : Number(opponentScoreInput)
+    let result: MatchResult | undefined = undefined
+    if (myScore !== undefined && opponentScore !== undefined) {
+      if (myScore > opponentScore) result = 'win'
+      else if (myScore < opponentScore) result = 'loss'
+      else result = 'draw'
+    }
+    onUpdate({ ...match, myScore, opponentScore, result })
+  }
 
   const handleOpponentEdit = () => {
     setOpponentInput(match.opponent)
@@ -129,8 +145,8 @@ export default function MatchDetail({
     }))
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="match-detail-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="match-detail-content">
         <div className="match-header">
           <div className="match-title-area">
             <span className="match-date">{match.date}</span>
@@ -174,6 +190,48 @@ export default function MatchDetail({
               </>
             )}
             <button className="btn-close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        {/* 試合結果・スコア入力エリア */}
+        <div className="match-score-bar">
+          <div className="score-display">
+            {match.result && (
+              <span className={`result-badge result-${match.result}`}>
+                {match.result === 'win' ? '勝' : match.result === 'loss' ? '負' : '引'}
+              </span>
+            )}
+            {isAdmin ? (
+              <div className="score-input-row">
+                <input
+                  type="number"
+                  min={0}
+                  className="score-input"
+                  value={myScoreInput}
+                  onChange={e => setMyScoreInput(e.target.value)}
+                  onBlur={handleResultSave}
+                  placeholder="自"
+                />
+                <span className="score-separator">-</span>
+                <input
+                  type="number"
+                  min={0}
+                  className="score-input"
+                  value={opponentScoreInput}
+                  onChange={e => setOpponentScoreInput(e.target.value)}
+                  onBlur={handleResultSave}
+                  placeholder="相"
+                />
+                <span className="score-label">（入力後フォーカスを外すと自動保存）</span>
+              </div>
+            ) : (
+              <div className="score-readonly">
+                {match.myScore !== undefined && match.opponentScore !== undefined
+                  ? <span className="score-text">{match.myScore} - {match.opponentScore}</span>
+                  : <span className="score-text score-empty">スコア未入力</span>
+                }
+              </div>
+            )}
           </div>
         </div>
 

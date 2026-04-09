@@ -61,6 +61,9 @@ export interface InningStats {
   sacrificeFlies: number  // 犠フライ
   errors: number      // エラー
   deadBalls: number   // デッドボール（死球）
+  forcedWalks?: number      // 押し出しフォアボール
+  forcedDeadBalls?: number  // 押し出しデッドボール
+  battingInterference?: number  // 打撃妨害
   hitDirection?: HitDirection  // 打球方向
 }
 
@@ -71,11 +74,17 @@ export interface PlayerStats {
   isSubstitute?: boolean  // 代打選手として登録されているか
 }
 
+// 試合結果
+export type MatchResult = 'win' | 'loss' | 'draw'
+
 // 試合情報
 export interface Match {
   id: string
   date: string
   opponent: string
+  result?: MatchResult    // 勝敗（勝/負/引）
+  myScore?: number        // 自チーム得点
+  opponentScore?: number  // 相手チーム得点
   members: Member[]
   stats: Map<string, PlayerStats>  // playerId -> PlayerStats
 }
