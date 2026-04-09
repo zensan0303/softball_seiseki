@@ -3,7 +3,7 @@ import type { Member, PlayerStats, InningStats } from '../types'
 import { FIELD_POSITION_LABELS } from '../types'
 import '../styles/InningByInningStats.css'
 
-type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
+type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | 'forced-walk' | 'forced-dead-ball' | 'batting-interference' | ''
 
 interface InningByInningStatsProps {
   members: Member[]
@@ -110,7 +110,7 @@ export default function InningByInningStats({
     // 最後の打席が選択されていない場合は追加不可
     if (allInningsInThisInning.length > 0) {
       const lastInning = allInningsInThisInning[allInningsInThisInning.length - 1]
-      if (lastInning.atBats === 0 && lastInning.walks === 0 && lastInning.sacrificeBunts === 0 && lastInning.sacrificeFlies === 0 && lastInning.errors === 0) {
+      if (lastInning.atBats === 0 && lastInning.walks === 0 && lastInning.sacrificeBunts === 0 && lastInning.sacrificeFlies === 0 && lastInning.errors === 0 && (lastInning.battingInterference || 0) === 0) {
         return false
       }
     }
@@ -325,6 +325,9 @@ export default function InningByInningStats({
         sacrificeFlies: 0,
         errors: 0,
         deadBalls: 0,
+        forcedWalks: 0,
+        forcedDeadBalls: 0,
+        battingInterference: 0,
       }
     }
 
@@ -340,6 +343,10 @@ export default function InningByInningStats({
     updatedInning.sacrificeBunts = 0
     updatedInning.sacrificeFlies = 0
     updatedInning.errors = 0
+    updatedInning.deadBalls = 0
+    updatedInning.forcedWalks = 0
+    updatedInning.forcedDeadBalls = 0
+    updatedInning.battingInterference = 0
     updatedInning.rbis = rbi
 
     // 結果に応じて更新
@@ -393,6 +400,20 @@ export default function InningByInningStats({
       updatedInning.deadBalls = 1
       updatedInning.walks = 1  // 四死球に含める
       // ※ atBats: 0のまま（打数に含まない）
+    } else if (result === 'forced-walk') {
+      // 押し出しフォアボール：満塁四球で1点入る（打数に含まない・打点1）
+      updatedInning.walks = 1
+      updatedInning.forcedWalks = 1
+      updatedInning.rbis = 1
+    } else if (result === 'forced-dead-ball') {
+      // 押し出しデッドボール：満塁死球で1点入る（打数に含まない・打点1）
+      updatedInning.deadBalls = 1
+      updatedInning.walks = 1  // 四死球に含める
+      updatedInning.forcedDeadBalls = 1
+      updatedInning.rbis = 1
+    } else if (result === 'batting-interference') {
+      // 打撃妨害：妨害により打者が出塁（打数に含まない・打点なし）
+      updatedInning.battingInterference = 1
     }
 
     // memberStatsMapを更新
@@ -522,6 +543,9 @@ export default function InningByInningStats({
       sacrificeFlies: 0,
       errors: 0,
       deadBalls: 0,
+      forcedWalks: 0,
+      forcedDeadBalls: 0,
+      battingInterference: 0,
     }
 
     playerInnings.push(newInning)
@@ -835,6 +859,10 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     if (result === 'out' || result === 'walk' || result === '') {
       onSelect(result, 0, atBatIndex)
       setShowRBISelect(false)
+    } else if (result === 'forced-walk' || result === 'forced-dead-ball' || result === 'batting-interference') {
+      // 押し出し系・打撃妨害：打点は自動（押し出し=1、打撃妨害=0）
+      onSelect(result, 0, atBatIndex)
+      setShowRBISelect(false)
     } else if (result === 'out-rbi') {
       // アウト（打点）は打点選択を表示
       setShowRBISelect(true)
@@ -925,10 +953,13 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                       <option value="triple">三 (三塁打)</option>
                       <option value="homerun">H (本塁打)</option>
                       <option value="walk">四 (四球)</option>
+                      <option value="forced-walk">押四 (押し出し四球)</option>
                       <option value="sacrifice-bunt">SH (犠打)</option>
                       <option value="sacrifice-fly">SF (犠フライ)</option>
                       <option value="error">E (相手エラー)</option>
                       <option value="dead-ball">DB (デッドボール)</option>
+                      <option value="forced-dead-ball">押DB (押し出し死球)</option>
+                      <option value="batting-interference">打妨 (打撃妨害)</option>
                     </select>
                     {isAdmin && allInnings.length > 1 && (
                       <button
@@ -958,10 +989,13 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
               <option value="triple">三 (三塁打)</option>
               <option value="homerun">H (本塁打)</option>
               <option value="walk">四 (四球)</option>
+              <option value="forced-walk">押四 (押し出し四球)</option>
               <option value="sacrifice-bunt">SH (犠打)</option>
               <option value="sacrifice-fly">SF (犠フライ)</option>
               <option value="error">E (相手エラー)</option>
               <option value="dead-ball">DB (デッドボール)</option>
+              <option value="forced-dead-ball">押DB (押し出し死球)</option>
+              <option value="batting-interference">打妨 (打撃妨害)</option>
             </select>
           )}
           {isAdmin && (
@@ -1027,13 +1061,16 @@ function getDisplayText(result: ResultType, rbi: number): string {
     'sacrifice-fly': '犠飛',
     error: 'E',
     'dead-ball': 'DB',
+    'forced-walk': '押四',
+    'forced-dead-ball': '押DB',
+    'batting-interference': '打妨',
     '': '-',
   }
 
   const resultText = resultMap[result] || '-'
 
-  // ヒット系や犠打・犠飛、アウト(打点)の場合、打点があれば表示
-  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly', 'out-rbi'].includes(result)
+  // ヒット系や犠打・犠飛、アウト(打点)、押し出し系の場合、打点があれば表示
+  const hasRBI = ['single', 'double', 'triple', 'homerun', 'sacrifice-bunt', 'sacrifice-fly', 'out-rbi', 'forced-walk', 'forced-dead-ball'].includes(result)
   if (hasRBI && rbi > 0) {
     return `${resultText}(${rbi})`
   }
@@ -1042,6 +1079,9 @@ function getDisplayText(result: ResultType, rbi: number): string {
 }
 
 function getResultLabelForSelector(inning: InningStats): ResultType {
+  if ((inning.forcedDeadBalls || 0) > 0) return 'forced-dead-ball'
+  if ((inning.forcedWalks || 0) > 0) return 'forced-walk'
+  if ((inning.battingInterference || 0) > 0) return 'batting-interference'
   if (inning.walks > 0 && inning.deadBalls === 0) return 'walk'
   if (inning.deadBalls > 0) return 'dead-ball'
   if (inning.stolenBases > 0) return 'stolen-base'

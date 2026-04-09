@@ -23,8 +23,9 @@ export const calculatePlayerStats = (stats: PlayerStats): Omit<PlayerOverallStat
     { atBats: 0, hits: 0, walks: 0, runs: 0, rbis: 0, doubles: 0, triples: 0, homeRuns: 0, stolenBases: 0, sacrificeBunts: 0, sacrificeFlies: 0, errors: 0 }
   )
 
-  // 打席数 = 打数 + 四死球 + 犠バント + 犠フライ（エラー出塁は打数に含まれる）
-  const plateAppearances = totals.atBats + totals.walks + totals.sacrificeBunts + totals.sacrificeFlies
+  // 打席数 = 打数 + 四死球 + 犠バント + 犠フライ + 打撃妨害（エラー出塁は打数に含まれる）
+  const battingInterferenceTotal = innings.reduce((sum, i) => sum + (i.battingInterference || 0), 0)
+  const plateAppearances = totals.atBats + totals.walks + totals.sacrificeBunts + totals.sacrificeFlies + battingInterferenceTotal
 
   // 塁打計算
   const avgBases = totals.hits + totals.doubles + totals.triples * 2 + totals.homeRuns * 3
