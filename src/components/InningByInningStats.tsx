@@ -642,16 +642,23 @@ export default function InningByInningStats({
 
   const getMembersByBattingOrder = (): Member[] => {
     if (!members || members.length === 0) return []
-    return members
-      .filter(m => {
-        if (!m) return false
-        // FP（守備専門選手）は打撃成績表から除外
-        if (m.fieldPosition === 'FP') return false
-        const order = m.battingOrder
-        // 打順が未設定（undefined, null, 0）または1-9の範囲内の場合は含める
-        return order === undefined || order === null || order === 0 || (order >= 1 && order <= 9)
-      })
-      .sort((a, b) => (a.battingOrder || 0) - (b.battingOrder || 0))
+
+    // 打順1〜9の選手を確定スロットとして並べる
+    const ordered: Member[] = []
+    for (let order = 1; order <= 9; order++) {
+      const m = members.find(
+        m => m && m.fieldPosition !== 'FP' && m.battingOrder === order
+      )
+      if (m) ordered.push(m)
+    }
+
+    // 打順未設定（0 / undefined / null）かつ FP 以外の選手を末尾に追加
+    const unassigned = members.filter(m => {
+      if (!m || m.fieldPosition === 'FP') return false
+      const order = m.battingOrder
+      return !order || order === 0
+    })
+    return [...ordered, ...unassigned]
   }
 
   const getTotalAtBats = (memberId: string): number => {
