@@ -64,6 +64,7 @@ export interface InningStats {
   forcedWalks?: number      // 押し出しフォアボール
   forcedDeadBalls?: number  // 押し出しデッドボール
   battingInterference?: number  // 打撃妨害
+  uncaughtStrikeouts?: number   // 振り逃げ（打数1・三振扱い、アウトカウント不加算）
   hitDirection?: HitDirection  // 打球方向
 }
 

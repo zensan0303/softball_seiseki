@@ -3,7 +3,7 @@ import type { Member, PlayerStats, InningStats } from '../types'
 import { FIELD_POSITION_LABELS } from '../types'
 import '../styles/InningByInningStats.css'
 
-type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | 'forced-walk' | 'forced-dead-ball' | 'batting-interference' | ''
+type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | 'forced-walk' | 'forced-dead-ball' | 'batting-interference' | 'uncaught-strikeout' | ''
 
 interface InningByInningStatsProps {
   members: Member[]
@@ -76,8 +76,8 @@ export default function InningByInningStats({
     memberStatsMap.forEach((innings) => {
       innings.forEach((inning) => {
         if (inning.inningNumber === inningNumber) {
-          // 通常のアウト：atBats > 0 かつ hits = 0 かつ errors = 0（エラーはアウトではなく出塁）
-          if (inning.atBats > 0 && inning.hits === 0 && (!inning.errors || inning.errors === 0)) {
+          // 通常のアウト：atBats > 0 かつ hits = 0 かつ errors = 0（エラー・振り逃げはアウトではなく出塁）
+          if (inning.atBats > 0 && inning.hits === 0 && (!inning.errors || inning.errors === 0) && !(inning.uncaughtStrikeouts && inning.uncaughtStrikeouts > 0)) {
             outCount += inning.atBats
           }
           // 犠打：アウト換算
@@ -328,6 +328,7 @@ export default function InningByInningStats({
         forcedWalks: 0,
         forcedDeadBalls: 0,
         battingInterference: 0,
+        uncaughtStrikeouts: 0,
       }
     }
 
@@ -347,6 +348,7 @@ export default function InningByInningStats({
     updatedInning.forcedWalks = 0
     updatedInning.forcedDeadBalls = 0
     updatedInning.battingInterference = 0
+    updatedInning.uncaughtStrikeouts = 0
     updatedInning.rbis = rbi
 
     // 結果に応じて更新
@@ -414,6 +416,10 @@ export default function InningByInningStats({
     } else if (result === 'batting-interference') {
       // 打撃妨害：妨害により打者が出塁（打数に含まない・打点なし）
       updatedInning.battingInterference = 1
+    } else if (result === 'uncaught-strikeout') {
+      // 振り逃げ：打数1・三振扱いだがアウトカウントは増えない（出塁）
+      updatedInning.atBats = 1
+      updatedInning.uncaughtStrikeouts = 1
     }
 
     // memberStatsMapを更新
@@ -860,7 +866,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
     setSelectedResult(result)
     setSelectedAtBatIndex(atBatIndex)
 
-    if (result === 'out' || result === 'walk' || result === '') {
+    if (result === 'out' || result === 'walk' || result === '' || result === 'uncaught-strikeout') {
       onSelect(result, 0, atBatIndex)
       setShowRBISelect(false)
     } else if (result === 'forced-walk' || result === 'forced-dead-ball' || result === 'batting-interference') {
@@ -964,6 +970,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
                       <option value="dead-ball">DB (デッドボール)</option>
                       <option value="forced-dead-ball">押DB (押し出し死球)</option>
                       <option value="batting-interference">打妨 (打撃妨害)</option>
+                      <option value="uncaught-strikeout">振逃 (振り逃げ)</option>
                     </select>
                     {isAdmin && allInnings.length > 1 && (
                       <button
@@ -1000,6 +1007,7 @@ function ResultSelector({ inning, allInnings, onSelect, onAddAtBat, onRemoveAtBa
               <option value="dead-ball">DB (デッドボール)</option>
               <option value="forced-dead-ball">押DB (押し出し死球)</option>
               <option value="batting-interference">打妨 (打撃妨害)</option>
+              <option value="uncaught-strikeout">振逃 (振り逃げ)</option>
             </select>
           )}
           {isAdmin && (
@@ -1068,6 +1076,7 @@ function getDisplayText(result: ResultType, rbi: number): string {
     'forced-walk': '押四',
     'forced-dead-ball': '押DB',
     'batting-interference': '打妨',
+    'uncaught-strikeout': '振逃',
     '': '-',
   }
 
@@ -1096,6 +1105,7 @@ function getResultLabelForSelector(inning: InningStats): ResultType {
   if (inning.doubles > 0) return 'double'
   if (inning.hits > 0) return 'single'
   if (inning.atBats > 0 && inning.rbis > 0) return 'out-rbi'
+  if (inning.atBats > 0 && (inning.uncaughtStrikeouts || 0) > 0) return 'uncaught-strikeout'
   if (inning.atBats > 0) return 'out'
   if (inning.stolenBases > 0) return 'stolen-base'
   return ''
