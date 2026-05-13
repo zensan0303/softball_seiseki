@@ -428,6 +428,7 @@ export default function InningByInningStats({
       const updatedPlayerStats: PlayerStats = {
         playerId: memberId,
         innings: filtered,
+        isSubstitute: isSubstituteMember(memberId) || undefined,
       }
       onUpdateStats(memberId, updatedPlayerStats)
       // ランナーからも削除
@@ -442,6 +443,7 @@ export default function InningByInningStats({
       const updatedPlayerStats: PlayerStats = {
         playerId: memberId,
         innings: updatedInningsList,
+        isSubstitute: isSubstituteMember(memberId) || undefined,
       }
       onUpdateStats(memberId, updatedPlayerStats)
       // ランナーを更新（ヒット結果を記録）
@@ -469,6 +471,7 @@ export default function InningByInningStats({
             const updatedRunnerStats: PlayerStats = {
               playerId: runnerId,
               innings: runnerInnings,
+              isSubstitute: isSubstituteMember(runnerId) || undefined,
             }
             onUpdateStats(runnerId, updatedRunnerStats)
           }
@@ -500,6 +503,7 @@ export default function InningByInningStats({
               const updatedRunnerStats: PlayerStats = {
                 playerId: runnerId,
                 innings: runnerInnings,
+                isSubstitute: isSubstituteMember(runnerId) || undefined,
               }
               onUpdateStats(runnerId, updatedRunnerStats)
             }
@@ -558,6 +562,7 @@ export default function InningByInningStats({
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
       innings: playerInnings,
+      isSubstitute: isSubstituteMember(memberId) || undefined,
     }
     onUpdateStats(memberId, updatedPlayerStats)
   }
@@ -577,6 +582,7 @@ export default function InningByInningStats({
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
       innings: filtered,
+      isSubstitute: isSubstituteMember(memberId) || undefined,
     }
     onUpdateStats(memberId, updatedPlayerStats)
   }
@@ -600,6 +606,7 @@ export default function InningByInningStats({
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
       innings: updated,
+      isSubstitute: isSubstituteMember(memberId) || undefined,
     }
     onUpdateStats(memberId, updatedPlayerStats)
   }
@@ -622,6 +629,7 @@ export default function InningByInningStats({
     const updatedPlayerStats: PlayerStats = {
       playerId: memberId,
       innings: updated,
+      isSubstitute: isSubstituteMember(memberId) || undefined,
     }
     onUpdateStats(memberId, updatedPlayerStats)
   }
@@ -718,7 +726,6 @@ export default function InningByInningStats({
                       className={`cell-result ${isClosed ? 'closed' : ''} ${hasMultipleAtBats ? 'multiple' : ''}`}
                     >
                       <ResultSelector
-                        memberId={member.id}
                         inning={inning}
                         allInnings={allInnings}
                         onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
@@ -760,16 +767,14 @@ export default function InningByInningStats({
                   const inningNumber = i + 1
                   const inning = getInningStats(member.id, inningNumber)
                   const allInnings = getAllInningStats(member.id, inningNumber)
-                  const isClosed = false  // 代打選手は3アウトでもグレーアウトしない
                   const hasMultipleAtBats = allInnings.length > 1
 
                   return (
                     <td
                       key={inningNumber}
-                      className={`cell-result ${isClosed ? 'closed' : ''} ${hasMultipleAtBats ? 'multiple' : ''}`}
+                      className={`cell-result ${hasMultipleAtBats ? 'multiple' : ''}`}
                     >
                       <ResultSelector
-                        memberId={member.id}
                         inning={inning}
                         allInnings={allInnings}
                         onSelect={(result, rbi, atBatIndex) => handleResultClick(member.id, inningNumber, result, rbi, atBatIndex)}
@@ -777,7 +782,7 @@ export default function InningByInningStats({
                         onRemoveAtBat={(atBatIndex) => handleRemoveAtBat(member.id, inningNumber, atBatIndex)}
                         onUpdateStolenBases={(delta) => handleUpdateStolenBases(member.id, inningNumber, delta)}
                         onUpdateStolenBaseOuts={(value) => handleUpdateStolenBaseOuts(member.id, inningNumber, value)}
-                        isClosed={isClosed}
+                        isClosed={false}
                         canAddAtBat={canAddAnotherAtBat(inningNumber, member.id)}
                         isAdmin={isAdmin}
                       />
@@ -832,7 +837,6 @@ export default function InningByInningStats({
 }
 
 interface ResultSelectorProps {
-  memberId: string
   inning: InningStats | undefined
   allInnings: InningStats[]
   onSelect: (result: ResultType, rbi: number, atBatIndex: number) => void
@@ -1084,7 +1088,6 @@ function getResultLabelForSelector(inning: InningStats): ResultType {
   if ((inning.battingInterference || 0) > 0) return 'batting-interference'
   if (inning.walks > 0 && inning.deadBalls === 0) return 'walk'
   if (inning.deadBalls > 0) return 'dead-ball'
-  if (inning.stolenBases > 0) return 'stolen-base'
   if (inning.sacrificeBunts > 0) return 'sacrifice-bunt'
   if (inning.sacrificeFlies > 0) return 'sacrifice-fly'
   if (inning.errors > 0) return 'error'
@@ -1094,5 +1097,6 @@ function getResultLabelForSelector(inning: InningStats): ResultType {
   if (inning.hits > 0) return 'single'
   if (inning.atBats > 0 && inning.rbis > 0) return 'out-rbi'
   if (inning.atBats > 0) return 'out'
+  if (inning.stolenBases > 0) return 'stolen-base'
   return ''
 }
