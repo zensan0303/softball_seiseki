@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Member, HitDirection } from '../types'
 import '../styles/InningInputScreen.css'
 
-type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | ''
+type ResultType = 'out' | 'out-rbi' | 'single' | 'double' | 'triple' | 'homerun' | 'walk' | 'stolen-base' | 'sacrifice-bunt' | 'sacrifice-fly' | 'error' | 'dead-ball' | 'uncaught-strikeout' | ''
 
 interface InningInputScreenProps {
   member: Member
@@ -34,6 +34,7 @@ export default function InningInputScreen({
     { value: 'sacrifice-fly', label: '犠飛', needsDirection: true },
     { value: 'error', label: 'エラー', needsDirection: true },
     { value: 'stolen-base', label: '盗塁', needsDirection: false },
+    { value: 'uncaught-strikeout', label: '振り逃げ', needsDirection: false },
   ]
 
   const directionOptions: { value: HitDirection; label: string }[] = [
