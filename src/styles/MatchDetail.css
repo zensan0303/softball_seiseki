@@ -233,6 +233,13 @@
   animation: fadeIn 0.3s ease;
   flex: 1;
   overflow-y: auto;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .match-detail-content-body {
+    padding: 12px;
+  }
 }
 
 @keyframes fadeIn {
