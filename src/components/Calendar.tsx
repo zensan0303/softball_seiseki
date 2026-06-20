@@ -474,59 +474,62 @@ export default function Calendar({ globalMembers, onAddMember, onRemoveMember, o
           </div>
         </div>
 
-        <table className="stats-table-all">
-          <thead>
-            <tr>
-              <th>選手</th>
-              <th>試</th>
-              <th>打席</th>
-              <th>打</th>
-              <th>安</th>
-              <th>二</th>
-              <th>三</th>
-              <th>本</th>
-              <th>四</th>
-              <th>打点</th>
-              <th>盗</th>
-              <th>犠</th>
-              <th>犠飛</th>
-              <th>打率</th>
-              <th>長打率</th>
-              <th>出塁率</th>
-            </tr>
-          </thead>
-          <tbody>
-            {memberStats.map((stat) => {
-              const plateAppearances = stat.atBats + stat.walks + stat.sacrificeFlies + stat.sacrificeBunts
-              const avg = stat.atBats > 0 ? (stat.hits / stat.atBats).toFixed(3) : '.000'
-              const slg = stat.atBats > 0 ? ((stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats).toFixed(3) : '.000'
-              const obp = (stat.atBats + stat.walks + stat.sacrificeFlies) > 0 ? ((stat.hits + stat.walks) / (stat.atBats + stat.walks + stat.sacrificeFlies)).toFixed(3) : '.000'
-              const sb = stat.stolenBases || 0
-              const sh = stat.sacrificeBunts || 0
-              const sf = stat.sacrificeFlies || 0
-              return (
-                <tr key={stat.name}>
-                  <td className="stat-name">{stat.name}</td>
-                  <td>{stat.matches}</td>
-                  <td>{plateAppearances}</td>
-                  <td>{stat.atBats}</td>
-                  <td>{stat.hits}</td>
-                  <td>{stat.doubles}</td>
-                  <td>{stat.triples}</td>
-                  <td>{stat.homeRuns}</td>
-                  <td>{stat.walks}</td>
-                  <td>{stat.rbis}</td>
-                  <td>{sb}</td>
-                  <td>{sh}</td>
-                  <td>{sf}</td>
-                  <td>{avg}</td>
-                  <td>{slg}</td>
-                  <td>{obp}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <p className="stats-table-scroll-hint">※ 表は左右にスクロールできます</p>
+        <div className="stats-table-all-wrapper">
+          <table className="stats-table-all">
+            <thead>
+              <tr>
+                <th>選手</th>
+                <th>試</th>
+                <th>打席</th>
+                <th>打</th>
+                <th>安</th>
+                <th>二</th>
+                <th>三</th>
+                <th>本</th>
+                <th>四</th>
+                <th>打点</th>
+                <th>盗</th>
+                <th>犠</th>
+                <th>犠飛</th>
+                <th>打率</th>
+                <th>長打率</th>
+                <th>出塁率</th>
+              </tr>
+            </thead>
+            <tbody>
+              {memberStats.map((stat) => {
+                const plateAppearances = stat.atBats + stat.walks + stat.sacrificeFlies + stat.sacrificeBunts
+                const avg = stat.atBats > 0 ? (stat.hits / stat.atBats).toFixed(3) : '.000'
+                const slg = stat.atBats > 0 ? ((stat.hits + stat.doubles + stat.triples * 2 + stat.homeRuns * 3) / stat.atBats).toFixed(3) : '.000'
+                const obp = (stat.atBats + stat.walks + stat.sacrificeFlies) > 0 ? ((stat.hits + stat.walks) / (stat.atBats + stat.walks + stat.sacrificeFlies)).toFixed(3) : '.000'
+                const sb = stat.stolenBases || 0
+                const sh = stat.sacrificeBunts || 0
+                const sf = stat.sacrificeFlies || 0
+                return (
+                  <tr key={stat.name}>
+                    <td className="stat-name">{stat.name}</td>
+                    <td>{stat.matches}</td>
+                    <td>{plateAppearances}</td>
+                    <td>{stat.atBats}</td>
+                    <td>{stat.hits}</td>
+                    <td>{stat.doubles}</td>
+                    <td>{stat.triples}</td>
+                    <td>{stat.homeRuns}</td>
+                    <td>{stat.walks}</td>
+                    <td>{stat.rbis}</td>
+                    <td>{sb}</td>
+                    <td>{sh}</td>
+                    <td>{sf}</td>
+                    <td>{avg}</td>
+                    <td>{slg}</td>
+                    <td>{obp}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }

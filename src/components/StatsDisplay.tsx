@@ -22,6 +22,8 @@ export default function StatsDisplay({ playerStats, opponent }: StatsDisplayProp
         </div>
       </div>
 
+      <p className="table-scroll-hint">※ 表は左右にスクロールできます</p>
+
       <div className="stats-table-container">
         <table className="stats-table">
           <thead>

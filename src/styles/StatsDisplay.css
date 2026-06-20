@@ -1,5 +1,6 @@
 .stats-display {
   padding: 16px 0;
+  min-width: 0;
 }
 
 .stats-display h3 {
@@ -9,7 +10,7 @@
   padding-bottom: 12px;
 }
 
-.team-summary {
+.stats-display .team-summary {
   display: flex;
   gap: 24px;
   margin-bottom: 24px;
@@ -18,44 +19,48 @@
   border-radius: 4px;
 }
 
-.summary-item {
+.stats-display .summary-item {
   display: flex;
   flex-direction: column;
 }
 
-.summary-item .label {
+.stats-display .summary-item .label {
   font-size: 12px;
   color: #555;
   font-weight: 500;
   margin-bottom: 4px;
 }
 
-.summary-item .value {
+.stats-display .summary-item .value {
   font-size: 24px;
   font-weight: bold;
   color: #1a1a1a;
 }
 
-.stats-table-container {
+.stats-display .stats-table-container {
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   border: 1px solid #ddd;
   border-radius: 4px;
   max-width: 100%;
+  width: 100%;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 
-.stats-table {
+.stats-display .stats-table {
   width: max-content;
   min-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 
-.stats-table thead {
+.stats-display .stats-table thead {
   background-color: #f0f0f0;
 }
 
-.stats-table th {
+.stats-display .stats-table th {
   padding: 12px 8px;
   text-align: center;
   font-weight: 600;
@@ -64,7 +69,7 @@
   white-space: nowrap;
 }
 
-.stats-table td {
+.stats-display .stats-table td {
   padding: 10px 8px;
   text-align: center;
   border-bottom: 1px solid #eee;
@@ -72,28 +77,32 @@
   white-space: nowrap;
 }
 
-.stats-table tr:hover {
+.stats-display .stats-table tr:hover {
   background-color: #f9f9f9;
 }
 
-.stats-table .player-name {
+.stats-display .stats-table .player-name {
   text-align: left;
   font-weight: 500;
   color: #1a1a1a;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
 }
 
-.stats-table .highlight {
+.stats-display .stats-table .highlight {
   color: #007bff;
   font-weight: 600;
 }
 
-.stats-table .highlight-ops {
+.stats-display .stats-table .highlight-ops {
   color: #dc3545;
   font-weight: 700;
   font-size: 14px;
 }
 
-.stats-legend {
+.stats-display .stats-legend {
   margin-top: 24px;
   padding: 16px;
   background-color: #f0f8ff;
@@ -101,32 +110,38 @@
   border-radius: 4px;
 }
 
-.stats-legend h4 {
+.stats-display .stats-legend h4 {
   margin: 0 0 12px 0;
   color: #1a1a1a;
 }
 
-.stats-legend ul {
+.stats-display .stats-legend ul {
   margin: 0;
   padding: 0 0 0 20px;
   list-style: none;
 }
 
-.stats-legend li {
+.stats-display .stats-legend li {
   margin-bottom: 8px;
   color: #555;
   font-size: 13px;
 }
 
-.stats-legend strong {
+.stats-display .stats-legend strong {
   color: #1a1a1a;
 }
 
-.empty-message {
+.stats-display .empty-message {
   text-align: center;
   color: #888;
   padding: 20px;
   font-style: italic;
+}
+
+.stats-display .table-scroll-hint {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 @media (max-width: 600px) {
@@ -138,20 +153,37 @@
     font-size: 1rem;
   }
 
-  .stats-table {
+  .stats-display .team-summary {
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stats-display .summary-item .value {
+    font-size: 20px;
+  }
+
+  .stats-display .stats-table {
     font-size: 11px;
   }
 
-  .stats-table th,
-  .stats-table td {
+  .stats-display .stats-table th,
+  .stats-display .stats-table td {
     padding: 8px 5px;
   }
 
-  .stats-legend {
-    font-size: 12px;
+  .stats-display .stats-table .player-name {
+    min-width: 88px;
   }
 
-  .stats-legend li {
+  .stats-display .stats-legend {
     font-size: 12px;
+    margin-top: 14px;
+    padding: 12px;
+  }
+
+  .stats-display .stats-legend li {
+    font-size: 12px;
+    margin-bottom: 6px;
   }
 }
